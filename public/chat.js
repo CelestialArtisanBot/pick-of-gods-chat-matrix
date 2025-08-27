@@ -8,14 +8,12 @@ let chatHistory = [
 ];
 let isProcessing = false;
 
-// Auto-resize textarea
-userInput.addEventListener("input", () => {
-  userInput.style.height = "auto";
-  userInput.style.height = userInput.scrollHeight + "px";
+userInput.addEventListener("input", function () {
+  this.style.height = "auto";
+  this.style.height = this.scrollHeight + "px";
 });
 
-// Send on Enter
-userInput.addEventListener("keydown", (e) => {
+userInput.addEventListener("keydown", function (e) {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     sendMessage();
@@ -33,46 +31,59 @@ async function sendMessage() {
   sendButton.disabled = true;
 
   addMessageToChat("user", message);
-  chatHistory.push({ role: "user", content: message });
-
   userInput.value = "";
   userInput.style.height = "auto";
   typingIndicator.classList.add("visible");
-
-  const assistantMessageEl = document.createElement("div");
-  assistantMessageEl.className = "message assistant-message";
-  assistantMessageEl.innerHTML = "<p></p>";
-  chatMessages.appendChild(assistantMessageEl);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  chatHistory.push({ role: "user", content: message });
 
   try {
+    const assistantMessageEl = document.createElement("div");
+    assistantMessageEl.className = "message assistant-message";
+    assistantMessageEl.innerHTML = "<p></p>";
+    chatMessages.appendChild(assistantMessageEl);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages: chatHistory }),
     });
 
-    if (!response.ok) throw new Error("Failed to fetch");
+    if (!response.ok) throw new Error("Failed to get response");
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    let assistantText = "";
+    let responseText = "";
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
       const chunk = decoder.decode(value, { stream: true });
-      assistantText += chunk;
-      assistantMessageEl.querySelector("p").textContent = assistantText;
-      chatMessages.scrollTop = chatMessages.scrollHeight;
+      const lines = chunk.split("\n");
+      for (const line of lines) {
+        try {
+          const jsonData = JSON.parse(line);
+          if (jsonData.response) {
+            responseText += jsonData.response;
+            // Neon-style streaming
+            assistantMessageEl.querySelector("p").innerHTML = "";
+            for (let char of responseText) {
+              const span = document.createElement("span");
+              span.textContent = char;
+              span.className = "neon-char";
+              assistantMessageEl.querySelector("p").appendChild(span);
+            }
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+          }
+        } catch (e) { console.error("JSON parse error:", e); }
+      }
     }
 
-    chatHistory.push({ role: "assistant", content: assistantText });
-
-  } catch (err) {
-    console.error(err);
-    addMessageToChat("assistant", "Oops! Something went wrong.");
+    chatHistory.push({ role: "assistant", content: responseText });
+  } catch (error) {
+    console.error(error);
+    addMessageToChat("assistant", "Sorry, there was an error processing your request.");
   } finally {
     typingIndicator.classList.remove("visible");
     isProcessing = false;
