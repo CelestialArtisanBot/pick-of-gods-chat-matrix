@@ -3,7 +3,7 @@ const userInput = document.getElementById("user-input");
 const sendButton = document.getElementById("send-button");
 const typingIndicator = document.getElementById("typing-indicator");
 
-let chatHistory = [{ role: "assistant", content: "Hello! I'm Pick of Gods AI. How can I assist you today?" }];
+let chatHistory = [{ role: "assistant", content: "Hello! I'm Mark Anthony's AI. How can I assist you today?" }];
 let isProcessing = false;
 
 userInput.addEventListener("input", function() {
