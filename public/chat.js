@@ -1,7 +1,7 @@
 /**
- * LLM Chat App Frontend
+ * Pick of Gods AI Chat Frontend
  *
- * Handles the chat UI interactions and communication with the backend API.
+ * Handles chat UI interactions and communicates with the backend API.
  */
 
 // DOM elements
@@ -14,8 +14,7 @@ const typingIndicator = document.getElementById("typing-indicator");
 let chatHistory = [
   {
     role: "assistant",
-    content:
-      "Hello! I'm an LLM chat app powered by Cloudflare Workers AI. How can I help you today?",
+    content: "Hello! I'm Pick of Gods AI. How can I assist you today?",
   },
 ];
 let isProcessing = false;
@@ -43,7 +42,6 @@ sendButton.addEventListener("click", sendMessage);
 async function sendMessage() {
   const message = userInput.value.trim();
 
-  // Don't send empty messages
   if (message === "" || isProcessing) return;
 
   // Disable input while processing
@@ -85,10 +83,7 @@ async function sendMessage() {
       }),
     });
 
-    // Handle errors
-    if (!response.ok) {
-      throw new Error("Failed to get response");
-    }
+    if (!response.ok) throw new Error("Failed to get response");
 
     // Process streaming response
     const reader = response.body.getReader();
@@ -97,25 +92,17 @@ async function sendMessage() {
 
     while (true) {
       const { done, value } = await reader.read();
+      if (done) break;
 
-      if (done) {
-        break;
-      }
-
-      // Decode chunk
       const chunk = decoder.decode(value, { stream: true });
-
-      // Process SSE format
       const lines = chunk.split("\n");
+
       for (const line of lines) {
         try {
           const jsonData = JSON.parse(line);
           if (jsonData.response) {
-            // Append new content to existing text
             responseText += jsonData.response;
             assistantMessageEl.querySelector("p").textContent = responseText;
-
-            // Scroll to bottom
             chatMessages.scrollTop = chatMessages.scrollHeight;
           }
         } catch (e) {
@@ -130,13 +117,10 @@ async function sendMessage() {
     console.error("Error:", error);
     addMessageToChat(
       "assistant",
-      "Sorry, there was an error processing your request.",
+      "Sorry, there was an error processing your request."
     );
   } finally {
-    // Hide typing indicator
     typingIndicator.classList.remove("visible");
-
-    // Re-enable input
     isProcessing = false;
     userInput.disabled = false;
     sendButton.disabled = false;
@@ -152,7 +136,5 @@ function addMessageToChat(role, content) {
   messageEl.className = `message ${role}-message`;
   messageEl.innerHTML = `<p>${content}</p>`;
   chatMessages.appendChild(messageEl);
-
-  // Scroll to bottom
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
