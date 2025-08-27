@@ -8,12 +8,12 @@
       :root {
         --primary-color: #f6821f;
         --primary-hover: #e67e22;
-        --light-bg: #f9fafb;
+        --light-bg: rgba(0,0,0,0.6); /* semi-transparent for Matrix effect */
         --border-color: #e5e7eb;
-        --text-color: #1f2937;
+        --text-color: #00ff00; /* classic Matrix green */
         --text-light: #6b7280;
-        --user-msg-bg: #fff2e6;
-        --assistant-msg-bg: #f3f4f6;
+        --user-msg-bg: rgba(255,242,230,0.8);
+        --assistant-msg-bg: rgba(243,244,246,0.8);
       }
 
       * {
@@ -23,14 +23,14 @@
       }
 
       body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
-          Cantarell, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         line-height: 1.6;
         color: var(--text-color);
         max-width: 800px;
         margin: 0 auto;
         padding: 1rem;
+        background: black;
+        overflow: hidden;
       }
 
       header {
@@ -38,6 +38,8 @@
         margin-bottom: 2rem;
         padding: 1rem 0;
         border-bottom: 1px solid var(--border-color);
+        position: relative;
+        z-index: 2;
       }
 
       h1 {
@@ -53,13 +55,16 @@
         border: 1px solid var(--border-color);
         border-radius: 8px;
         overflow: hidden;
+        position: relative;
+        background-color: var(--light-bg);
+        z-index: 2;
       }
 
       .chat-messages {
         flex: 1;
         overflow-y: auto;
         padding: 1rem;
-        background-color: var(--light-bg);
+        background-color: transparent;
       }
 
       .message {
@@ -73,11 +78,13 @@
         background-color: var(--user-msg-bg);
         align-self: flex-end;
         margin-left: auto;
+        color: #000;
       }
 
       .assistant-message {
         background-color: var(--assistant-msg-bg);
         align-self: flex-start;
+        color: #000;
       }
 
       .message-input {
@@ -85,6 +92,8 @@
         padding: 0.75rem;
         border-top: 1px solid var(--border-color);
         background-color: white;
+        position: relative;
+        z-index: 2;
       }
 
       #user-input {
@@ -122,6 +131,8 @@
         margin-bottom: 1rem;
         font-style: italic;
         color: var(--text-light);
+        position: relative;
+        z-index: 2;
       }
 
       .typing-indicator.visible {
@@ -133,10 +144,30 @@
         text-align: center;
         font-size: 0.85rem;
         color: var(--text-light);
+        position: relative;
+        z-index: 2;
+      }
+
+      /* Canvas for Matrix rain */
+      canvas#matrix-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      /* Optional glow effect */
+      .message p {
+        text-shadow: 0 0 2px #00ff00, 0 0 4px #00ff00, 0 0 6px #00ff00;
       }
     </style>
   </head>
   <body>
+    <canvas id="matrix-canvas"></canvas>
+
     <header>
       <h1>Pick of Gods AI</h1>
       <p>Powered by Cloudflare Workers AI</p>
@@ -145,23 +176,14 @@
     <div class="chat-container">
       <div id="chat-messages" class="chat-messages">
         <div class="message assistant-message">
-          <p>
-            Hello! I'm Pick of Gods AI. How can I assist you today?
-          </p>
+          <p>Hello! I'm Pick of Gods AI. How can I assist you today?</p>
         </div>
       </div>
 
-      <div class="typing-indicator" id="typing-indicator">
-        AI is thinking...
-      </div>
+      <div class="typing-indicator" id="typing-indicator">AI is thinking...</div>
 
       <div class="message-input">
-        <textarea
-          id="user-input"
-          placeholder="Type your message here..."
-          rows="1"
-          autofocus
-        ></textarea>
+        <textarea id="user-input" placeholder="Type your message here..." rows="1" autofocus></textarea>
         <button id="send-button">Send</button>
       </div>
     </div>
@@ -170,7 +192,44 @@
       <p>Pick of Gods AI Chat &copy; 2025</p>
     </footer>
 
-    <!-- Chat app script -->
     <script src="chat.js"></script>
+
+    <script>
+      // Matrix rain effect
+      const canvas = document.getElementById("matrix-canvas");
+      const ctx = canvas.getContext("2d");
+      let width = canvas.width = window.innerWidth;
+      let height = canvas.height = window.innerHeight;
+
+      const columns = Math.floor(width / 20);
+      const drops = Array(columns).fill(0);
+
+      function drawMatrix() {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.fillStyle = "#0F0";
+        ctx.font = "16px monospace";
+
+        drops.forEach((y, i) => {
+          const text = String.fromCharCode(0x30A0 + Math.random() * 96);
+          ctx.fillText(text, i * 20, y * 20);
+
+          if (y * 20 > height && Math.random() > 0.975) {
+            drops[i] = 0;
+          }
+          drops[i]++;
+        });
+
+        requestAnimationFrame(drawMatrix);
+      }
+
+      drawMatrix();
+
+      window.addEventListener("resize", () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      });
+    </script>
   </body>
 </html>
