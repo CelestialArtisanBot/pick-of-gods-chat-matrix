@@ -6,7 +6,7 @@
     <title>Pick of Gods AI Chat</title>
     <style>
       :root {
-        --primary-color: #00ff55;
+        --primary-color: #00ff55;      /* fluorescent green */
         --primary-hover: #00cc44;
         --light-bg: #f0fff4;
         --border-color: #00ff55;
@@ -30,7 +30,13 @@
         background: #f0fff4;
       }
 
-      header { text-align: center; margin-bottom: 2rem; padding: 1rem 0; border-bottom: 2px solid var(--border-color); }
+      header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding: 1rem 0;
+        border-bottom: 2px solid var(--border-color);
+      }
+
       h1 { font-size: 1.8rem; color: var(--primary-color); }
 
       .chat-container {
@@ -57,28 +63,57 @@
         border-radius: 12px;
         max-width: 80%;
         font-weight: 500;
-        opacity: 0;
-        transform: translateY(10px);
-        transition: all 0.25s ease-out;
       }
-
-      .message.show { opacity: 1; transform: translateY(0); }
 
       .user-message { background-color: var(--user-msg-bg); align-self: flex-end; margin-left: auto; border: 1px solid var(--primary-color); }
       .assistant-message { background-color: var(--assistant-msg-bg); align-self: flex-start; border: 1px solid var(--primary-color); }
 
-      .message-input { display: flex; padding: 0.75rem; border-top: 2px solid var(--border-color); background-color: white; }
+      .message-input {
+        display: flex;
+        padding: 0.75rem;
+        border-top: 2px solid var(--border-color);
+        background-color: white;
+      }
 
-      #user-input { flex: 1; padding: 0.75rem; border: 2px solid var(--primary-color); border-radius: 8px; font-family: inherit; resize: none; min-height: 44px; outline: none; }
+      #user-input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 2px solid var(--primary-color);
+        border-radius: 8px;
+        font-family: inherit;
+        resize: none;
+        min-height: 44px;
+        outline: none;
+      }
 
-      #send-button { margin-left: 0.5rem; padding: 0 1rem; background-color: var(--primary-color); color: black; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
+      #send-button {
+        margin-left: 0.5rem;
+        padding: 0 1rem;
+        background-color: var(--primary-color);
+        color: black;
+        font-weight: bold;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
       #send-button:hover { background-color: var(--primary-hover); }
-      #send-button:disabled { background-color: var(--text-light); cursor: not-allowed; }
+
+      #send-button:disabled {
+        background-color: var(--text-light);
+        cursor: not-allowed;
+      }
 
       .typing-indicator { display: none; margin-bottom: 1rem; font-style: italic; color: var(--text-light); }
       .typing-indicator.visible { display: block; }
 
-      footer { margin-top: 1rem; text-align: center; font-size: 0.85rem; color: var(--text-light); }
+      footer {
+        margin-top: 1rem;
+        text-align: center;
+        font-size: 0.85rem;
+        color: var(--text-light);
+      }
     </style>
   </head>
   <body>
@@ -89,7 +124,7 @@
 
     <div class="chat-container">
       <div id="chat-messages" class="chat-messages">
-        <div class="message assistant-message show">
+        <div class="message assistant-message">
           <p>Hello! I'm Pick of Gods AI. How can I assist you today?</p>
         </div>
       </div>
