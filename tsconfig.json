@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2021",
-    "lib": ["es2021"],
+    "lib": ["es2021", "WebWorker"],
     "module": "es2022",
     "moduleResolution": "Bundler",
     "allowJs": true,
@@ -12,8 +12,8 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "types": ["./worker-configuration.d.ts", "node"]
+    "types": ["./worker-configuration.d.ts"]
   },
   "include": ["worker-configuration.d.ts", "src/**/*.ts"],
-  "exclude": ["test"]
+  "exclude": ["test", "node_modules"]
 }
