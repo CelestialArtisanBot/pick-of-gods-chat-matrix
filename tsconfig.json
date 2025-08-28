@@ -1,10 +1,9 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "lib": ["esnext"],
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
+    "target": "es2021",
+    "lib": ["es2021"],
+    "module": "es2022",
+    "moduleResolution": "Bundler",
     "allowJs": true,
     "checkJs": false,
     "noEmit": true,
@@ -15,6 +14,6 @@
     "skipLibCheck": true,
     "types": ["./worker-configuration.d.ts", "node"]
   },
-  "include": ["worker-configuration.d.ts", "src/**/*.ts", "src/**/*.js"],
+  "include": ["worker-configuration.d.ts", "src/**/*.ts"],
   "exclude": ["test"]
 }
