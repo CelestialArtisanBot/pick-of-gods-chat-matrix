@@ -2,24 +2,14 @@
   "name": "pick-of-gods-chat-matrix",
   "main": "src/index.ts",
   "compatibility_date": "2025-08-28",
-  "dev": {
-    "local": true
-  },
-  "build": {
-    "upload": {
-      "format": "modules"
-    }
-  },
   "site": {
     "bucket": "./public",
     "entry-point": "src"
   },
-  "env": {
-    "AI": "@cloudflare/workers-ai",
-    "ASSETS": "@site"
-  },
-  "vars": {
-    "CLOUDFLARE_ACCOUNT_ID": "",
-    "CLOUDFLARE_API_TOKEN": ""
+  "vars": {},
+  "build": {
+    "upload": {
+      "format": "modules"
+    }
   }
 }
