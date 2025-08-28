@@ -1,99 +1,50 @@
-/**
- * LLM Chat Application Template
- *
- * A simple chat application using Cloudflare Workers AI.
- * This template demonstrates how to implement an LLM-powered chat interface with
- * streaming responses using Server-Sent Events (SSE).
- *
- * @license MIT
- */
-import { Env, ChatMessage } from "./types";
-
-// Model ID for Workers AI model
-// https://developers.cloudflare.com/workers-ai/models/
-const MODEL_ID = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
-
-// Default system prompt
-const SYSTEM_PROMPT =
-  "You are a helpful, friendly assistant. Provide concise and accurate responses.";
+import chatWorker from "./chat-worker";
+import deployWorker from "./deploy-worker";
+import authWorker from "./auth-worker";
+import { Env } from "./types";
 
 export default {
-  /**
-   * Main request handler for the Worker
-   */
-  async fetch(
-    request: Request,
-    env: Env,
-    ctx: ExecutionContext,
-  ): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+    const pathSegments = url.pathname.split("/").filter(Boolean);
 
-    // Handle static assets (frontend)
-    if (url.pathname === "/" || !url.pathname.startsWith("/api/")) {
-      return env.ASSETS.fetch(request);
+    // --- Route: Chat API ---
+    if (url.pathname.startsWith("/api/chat")) {
+      return chatWorker.fetch(request, env, ctx);
     }
 
-    // API Routes
-    if (url.pathname === "/api/chat") {
-      // Handle POST requests for chat
-      if (request.method === "POST") {
-        return handleChatRequest(request, env);
+    // --- Route: Worker Deployment ---
+    if (url.pathname.startsWith("/deploy")) {
+      return deployWorker.fetch(request, env, ctx);
+    }
+
+    // --- Route: OpenAuth ---
+    if (url.pathname.startsWith("/auth")) {
+      return authWorker.fetch(request, env, ctx);
+    }
+
+    // --- Route: Frontend ---
+    // Serve unified index.html with tabs/sections for chat + deploy + auth
+    // The frontend HTML can live in `public/index.html` or be a string template
+    if (url.pathname === "/" || url.pathname === "/index.html") {
+      return env.ASSETS.fetch(request); // Serve your combined HTML
+    }
+
+    // --- Dispatch: dynamic Workers in your namespace ---
+    if (env.DISPATCHER) {
+      const workerName = pathSegments[0];
+      try {
+        const worker = env.DISPATCHER.get(workerName);
+        return await worker.fetch(request, env, ctx);
+      } catch (e: any) {
+        if (e.message?.startsWith("Worker not found")) {
+          return new Response(`Worker '${workerName}' not found`, { status: 404 });
+        }
+        return new Response("Internal error", { status: 500 });
       }
-
-      // Method not allowed for other request types
-      return new Response("Method not allowed", { status: 405 });
     }
 
-    // Handle 404 for unmatched routes
+    // Fallback 404
     return new Response("Not found", { status: 404 });
   },
 } satisfies ExportedHandler<Env>;
-
-/**
- * Handles chat API requests
- */
-async function handleChatRequest(
-  request: Request,
-  env: Env,
-): Promise<Response> {
-  try {
-    // Parse JSON request body
-    const { messages = [] } = (await request.json()) as {
-      messages: ChatMessage[];
-    };
-
-    // Add system prompt if not present
-    if (!messages.some((msg) => msg.role === "system")) {
-      messages.unshift({ role: "system", content: SYSTEM_PROMPT });
-    }
-
-    const response = await env.AI.run(
-      MODEL_ID,
-      {
-        messages,
-        max_tokens: 1024,
-      },
-      {
-        returnRawResponse: true,
-        // Uncomment to use AI Gateway
-        // gateway: {
-        //   id: "YOUR_GATEWAY_ID", // Replace with your AI Gateway ID
-        //   skipCache: false,      // Set to true to bypass cache
-        //   cacheTtl: 3600,        // Cache time-to-live in seconds
-        // },
-      },
-    );
-
-    // Return streaming response
-    return response;
-  } catch (error) {
-    console.error("Error processing chat request:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to process request" }),
-      {
-        status: 500,
-        headers: { "content-type": "application/json" },
-      },
-    );
-  }
-}
