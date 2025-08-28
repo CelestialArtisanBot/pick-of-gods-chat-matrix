@@ -1,50 +1,39 @@
-import chatWorker from "./chat-worker";
-import deployWorker from "./deploy-worker";
-import authWorker from "./auth-worker";
-import { Env } from "./types";
+import { ChatRequest, ChatResponse } from "./types";
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: any, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
-    const pathSegments = url.pathname.split("/").filter(Boolean);
 
-    // --- Route: Chat API ---
-    if (url.pathname.startsWith("/api/chat")) {
-      return chatWorker.fetch(request, env, ctx);
+    if (url.pathname === "/api/chat" && request.method === "POST") {
+      const body: ChatRequest = await request.json();
+
+      // Call AI model (Workers AI / external API)
+      const replyText = await handleAI(body.message, env);
+
+      const response: ChatResponse = { reply: replyText };
+      return new Response(JSON.stringify(response), {
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    // --- Route: Worker Deployment ---
-    if (url.pathname.startsWith("/deploy")) {
-      return deployWorker.fetch(request, env, ctx);
-    }
-
-    // --- Route: OpenAuth ---
-    if (url.pathname.startsWith("/auth")) {
-      return authWorker.fetch(request, env, ctx);
-    }
-
-    // --- Route: Frontend ---
-    // Serve unified index.html with tabs/sections for chat + deploy + auth
-    // The frontend HTML can live in `public/index.html` or be a string template
-    if (url.pathname === "/" || url.pathname === "/index.html") {
-      return env.ASSETS.fetch(request); // Serve your combined HTML
-    }
-
-    // --- Dispatch: dynamic Workers in your namespace ---
-    if (env.DISPATCHER) {
-      const workerName = pathSegments[0];
-      try {
-        const worker = env.DISPATCHER.get(workerName);
-        return await worker.fetch(request, env, ctx);
-      } catch (e: any) {
-        if (e.message?.startsWith("Worker not found")) {
-          return new Response(`Worker '${workerName}' not found`, { status: 404 });
-        }
-        return new Response("Internal error", { status: 500 });
-      }
-    }
-
-    // Fallback 404
     return new Response("Not found", { status: 404 });
   },
-} satisfies ExportedHandler<Env>;
+};
+
+async function handleAI(message: string, env: any): Promise<string> {
+  try {
+    // Example with Cloudflare Workers AI
+    const aiRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.ACCOUNT_ID}/ai/run/${env.AI_MODEL}`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${env.AI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt: message }),
+    });
+    const result = await aiRes.json();
+    return result.result?.response || "⚠️ AI did not return a response.";
+  } catch (err: any) {
+    return "⚠️ Error: " + err.message;
+  }
+}
