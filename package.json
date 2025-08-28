@@ -1,45 +1,23 @@
 {
   "name": "pick-of-gods-chat-matrix",
-  "description": "A combined chat, auth, deploy, and R2 management app powered by Cloudflare Workers",
+  "description": "Pick of Gods AI chat with Cloudflare Workers integration",
   "private": true,
   "cloudflare": {
-    "label": "Pick of Gods Chat + Platform",
-    "products": [
-      "Workers",
-      "Workers AI",
-      "AI Gateway",
-      "D1",
-      "KV",
-      "R2",
-      "Access"
-    ],
-    "categories": ["ai", "storage", "auth"],
-    "docs_url": "https://developers.cloudflare.com/",
-    "icon_urls": [],
-    "preview_image_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/153a71bf-d89c-4425-e510-0c7488f22500/public",
+    "label": "Pick of Gods AI Chat",
+    "products": ["Workers", "Workers AI", "Pages"],
+    "categories": ["ai", "chat"],
     "publish": true
   },
-  "dependencies": {
-    "@openauthjs/openauth": "^0.4.3",
-    "valibot": "^1.0.0-beta.9",
-    "cloudflare": "^4.5.0"
-  },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "0.8.44",
     "@cloudflare/workers-types": "^4.20250425.0",
     "@types/node": "24.0.4",
-    "typescript": "5.9.2",
-    "tsx": "^4.20.4",
-    "vitest": "3.2.4",
-    "wrangler": "^4.29.1"
+    "typescript": "5.8.3",
+    "wrangler": "4.21.x",
+    "vitest": "3.2.4"
   },
   "scripts": {
-    "cf-typegen": "wrangler types",
-    "check": "tsc --noEmit && wrangler deploy --dry-run",
-    "deploy": "wrangler d1 migrations apply AUTH_DB --remote && wrangler deploy",
-    "deploy:wfp": "tsx src/lib/deploy.ts",
     "dev": "wrangler dev",
-    "start": "wrangler dev",
-    "test": "vitest"
+    "deploy": "wrangler publish",
+    "check": "tsc --noEmit && wrangler deploy --dry-run"
   }
 }
