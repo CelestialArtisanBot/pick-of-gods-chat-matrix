@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2021",
-    "lib": ["es2021", "WebWorker"],
+    "lib": ["es2021", "WebWorker"], 
     "module": "es2022",
     "moduleResolution": "Bundler",
     "allowJs": true,
@@ -15,5 +15,5 @@
     "types": ["./worker-configuration.d.ts"]
   },
   "include": ["worker-configuration.d.ts", "src/**/*.ts"],
-  "exclude": ["test", "node_modules"]
+  "exclude": ["test"]
 }
