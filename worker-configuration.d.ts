@@ -7328,3 +7328,14 @@ declare abstract class WorkflowInstance {
         payload: unknown;
     }): Promise<void>;
 }
+declare module '*.ts' {
+  const content: any;
+  export default content;
+}
+
+// Worker globals
+declare var ASSETS: { fetch(request: Request): Promise<Response> };
+declare var AI: any;
+
+declare var AUTH_STORAGE: KVNamespace;
+declare var DISPATCHER: Map<string, any>;
