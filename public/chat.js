@@ -1,84 +1,83 @@
-// --- Matrix Rain ---
-const canvas = document.getElementById('matrix');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+const chatEl = document.getElementById('chat');
+const inputEl = document.getElementById('input');
+const sendBtn = document.getElementById('send');
+const tabsEl = document.getElementById('tabs');
+const newTabBtn = document.getElementById('newTab');
 
-const cols = Math.floor(canvas.width / 20);
-const ypos = Array(cols).fill(0);
+let chatMemory = JSON.parse(localStorage.getItem('chatMemory') || '{}');
+let activeTab = Object.keys(chatMemory)[0] || createNewTab();
 
-function matrixLoop() {
-  ctx.fillStyle = 'rgba(0,0,0,0.05)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#00ff00';
-  ctx.font = '20px monospace';
-  ypos.forEach((y, index) => {
-    const text = String.fromCharCode(33 + Math.random() * 94);
-    ctx.fillText(text, index * 20, y);
-    ypos[index] = y > canvas.height + Math.random() * 10000 ? 0 : y + 20;
+function createNewTab(name) {
+  const tabId = name || 'Memory ' + (Object.keys(chatMemory).length + 1);
+  chatMemory[tabId] = chatMemory[tabId] || [];
+  localStorage.setItem('chatMemory', JSON.stringify(chatMemory));
+  renderTabs();
+  switchTab(tabId);
+  return tabId;
+}
+
+function renderTabs() {
+  tabsEl.innerHTML = '';
+  Object.keys(chatMemory).forEach(tab => {
+    const btn = document.createElement('button');
+    btn.textContent = tab;
+    btn.className = 'tab' + (tab === activeTab ? ' active' : '');
+    btn.onclick = () => switchTab(tab);
+    tabsEl.appendChild(btn);
   });
 }
-setInterval(matrixLoop, 50);
 
-// --- Chat Frontend ---
-const chatContainer = document.getElementById('chat-container');
-const inputForm = document.getElementById('input-form');
-const messageInput = document.getElementById('message-input');
+function switchTab(tabId) {
+  activeTab = tabId;
+  renderTabs();
+  renderChat();
+}
 
-const addBubble = (text, role) => {
-  const bubble = document.createElement('div');
-  bubble.className = 'bubble ' + role;
-  bubble.textContent = text;
-  chatContainer.appendChild(bubble);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-};
-
-// --- Streaming AI Response ---
-async function sendMessage(message) {
-  addBubble(message, 'user');
-
-  const res = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: [{ role: 'user', content: message }], stream: false })
+function renderChat() {
+  chatEl.innerHTML = '';
+  const messages = chatMemory[activeTab] || [];
+  messages.forEach(msg => {
+    const div = document.createElement('div');
+    div.className = 'chat-message ' + msg.role;
+    div.innerHTML = `<pre>${msg.content}</pre>`;
+    div.onclick = () => copyToClipboard(msg.content);
+    chatEl.appendChild(div);
   });
-
-  const data = await res.json();
-  if (!data.success) return addBubble("AI error: " + data.error, 'assistant');
-
-  const aiMessage = data.messages[data.messages.length - 1]?.content || '...';
-  addBubble(aiMessage, 'assistant');
+  chatEl.scrollTop = chatEl.scrollHeight;
 }
 
-// --- Form Submit ---
-inputForm.addEventListener('submit', e => {
-  e.preventDefault();
-  const msg = messageInput.value.trim();
-  if (!msg) return;
-  messageInput.value = '';
-  sendMessage(msg);
-});
-
-// --- Optional Floating Bubbles for Matrix AI feel ---
-function floatingBubbleEffect() {
-  const bubble = document.createElement('div');
-  bubble.textContent = String.fromCharCode(33 + Math.floor(Math.random() * 94));
-  bubble.style.position = 'absolute';
-  bubble.style.left = Math.random() * window.innerWidth + 'px';
-  bubble.style.top = window.innerHeight + 'px';
-  bubble.style.color = '#00ff00';
-  bubble.style.fontSize = 16 + Math.random() * 12 + 'px';
-  bubble.style.opacity = Math.random();
-  document.body.appendChild(bubble);
-
-  let top = window.innerHeight;
-  const interval = setInterval(() => {
-    top -= 2 + Math.random() * 2;
-    bubble.style.top = top + 'px';
-    if (top < -50) {
-      clearInterval(interval);
-      bubble.remove();
-    }
-  }, 50);
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text);
+  alert('Copied message!');
 }
-setInterval(floatingBubbleEffect, 300);
+
+async function sendMessage() {
+  const content = inputEl.value.trim();
+  if (!content) return;
+  addMessage('user', content);
+  inputEl.value = '';
+
+  const response = await fetch('/api/chat', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({ messages: chatMemory[activeTab] })
+  });
+  const data = await response.json();
+  if (data.success && data.messages) {
+    data.messages.slice(chatMemory[activeTab].length).forEach(msg => addMessage(msg.role, msg.content));
+  } else {
+    addMessage('assistant', 'Error: ' + (data.error || 'Unknown'));
+  }
+}
+
+function addMessage(role, content) {
+  chatMemory[activeTab].push({ role, content, timestamp: new Date().toISOString() });
+  localStorage.setItem('chatMemory', JSON.stringify(chatMemory));
+  renderChat();
+}
+
+sendBtn.onclick = sendMessage;
+inputEl.addEventListener('keydown', e => { if(e.key==='Enter') sendMessage(); });
+newTabBtn.onclick = () => createNewTab();
+renderTabs();
+renderChat();
