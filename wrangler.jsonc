@@ -1,21 +1,25 @@
-/**
- * For more details on how to configure Wrangler, refer to:
- * https://developers.cloudflare.com/workers/wrangler/configuration/
- */ {
-  "$schema": "node_modules/wrangler/config-schema.json",
+{
   "name": "pick-of-gods-chat-matrix",
   "main": "src/index.ts",
-  "compatibility_date": "2025-04-01",
-  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  "assets": {
-    "binding": "ASSETS",
-    "directory": "./public"
+  "compatibility_date": "2025-08-28",
+  "dev": {
+    "local": true
   },
-  "observability": {
-    "enabled": true
+  "build": {
+    "upload": {
+      "format": "modules"
+    }
   },
-  "ai": {
-    "binding": "AI"
+  "site": {
+    "bucket": "./public",
+    "entry-point": "src"
   },
-  "upload_source_maps": true
+  "env": {
+    "AI": "@cloudflare/workers-ai",
+    "ASSETS": "@site"
+  },
+  "vars": {
+    "CLOUDFLARE_ACCOUNT_ID": "",
+    "CLOUDFLARE_API_TOKEN": ""
+  }
 }
