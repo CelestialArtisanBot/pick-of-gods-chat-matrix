@@ -1,35 +1,31 @@
-import type { Env, UserSubject } from "../types";
+import { Env, AuthRequestBody, AuthResponseBody, AuthSession, AuthSubject, UserSubject } from "../types";
+import { generateTimestamp, generateId } from "./utils";
 
 export async function handleAuth(request: Request, env: Env): Promise<Response> {
   try {
-    const { method } = request;
+    const body = (await request.json()) as AuthRequestBody;
 
-    if (method === "POST") {
-      const { id, email } = await request.json() as UserSubject;
-      if (!id) return new Response(JSON.stringify({ error: "Missing user ID" }), { status: 400 });
-
-      const sessionToken = crypto.randomUUID();
-
-      if (env.AUTH_STORAGE) {
-        await env.AUTH_STORAGE.put(sessionToken, JSON.stringify({ id, email }), { expirationTtl: 3600 });
-      }
-
-      return new Response(JSON.stringify({ sessionToken }), { headers: { "Content-Type": "application/json" } });
+    if (!body.email) {
+      const res: AuthResponseBody = { success: false, error: "Email required" };
+      return new Response(JSON.stringify(res), { headers: { "content-type": "application/json" } });
     }
 
-    if (method === "GET") {
-      const sessionToken = new URL(request.url).searchParams.get("token");
-      if (!sessionToken) return new Response(JSON.stringify({ error: "No token provided" }), { status: 400 });
+    const session: AuthSession = {
+      sessionId: generateId(),
+      subject: { type: "user", user: { id: generateId(), email: body.email } } as AuthSubject,
+      issuedAt: generateTimestamp(),
+      expiresAt: generateTimestamp(60 * 60 * 24),
+    };
 
-      const userData = env.AUTH_STORAGE ? await env.AUTH_STORAGE.get(sessionToken, "json") : null;
-      if (!userData) return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401 });
-
-      return new Response(JSON.stringify(userData), { headers: { "Content-Type": "application/json" } });
+    if (env.AUTH_STORAGE) {
+      await env.AUTH_STORAGE.put(session.sessionId, JSON.stringify(session));
     }
 
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
+    const res: AuthResponseBody = { success: true, session };
+    return new Response(JSON.stringify(res), { headers: { "content-type": "application/json" } });
   } catch (err) {
-    console.error("Auth Error:", err);
-    return new Response(JSON.stringify({ error: "Auth request failed" }), { status: 500 });
+    console.error(err);
+    const res: AuthResponseBody = { success: false, error: "Auth failed" };
+    return new Response(JSON.stringify(res), { status: 500, headers: { "content-type": "application/json" } });
   }
 }
