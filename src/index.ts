@@ -1,4 +1,15 @@
-import { Env, ChatRequestBody, ChatResponseBody, ImageRequestBody, ImageResponseBody, DeployRequestBody, DeployResponseBody, AuthRequestBody, AuthResponseBody, ChatMessage } from "./types";
+import {
+  Env,
+  ChatRequestBody,
+  ChatResponseBody,
+  ImageRequestBody,
+  ImageResponseBody,
+  DeployRequestBody,
+  DeployResponseBody,
+  AuthRequestBody,
+  AuthResponseBody,
+  ChatMessage
+} from "./types";
 
 /**
  * Pick of Gods Worker - Chat + Image + Deployment + Auth
@@ -62,9 +73,10 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
     return aiResponse;
   } catch (err) {
     console.error(err);
-    return new Response(JSON.stringify({ success: false, error: "Chat request failed" } as ChatResponseBody), {
-      status: 500, headers: { "content-type": "application/json" }
-    });
+    return new Response(
+      JSON.stringify({ success: false, error: "Chat request failed" } as ChatResponseBody),
+      { status: 500, headers: { "content-type": "application/json" } }
+    );
   }
 }
 
@@ -84,9 +96,10 @@ async function handleImage(request: Request, env: Env): Promise<Response> {
     return new Response(result, { headers: { "content-type": "image/png" } });
   } catch (err) {
     console.error(err);
-    return new Response(JSON.stringify({ success: false, error: "Image generation failed" } as ImageResponseBody), {
-      status: 500, headers: { "content-type": "application/json" }
-    });
+    return new Response(
+      JSON.stringify({ success: false, error: "Image generation failed" } as ImageResponseBody),
+      { status: 500, headers: { "content-type": "application/json" } }
+    );
   }
 }
 
@@ -100,14 +113,16 @@ async function handleDeploy(request: Request, env: Env): Promise<Response> {
 
     env.DISPATCHER.set(body.scriptName, { code: body.code, routes: body.routes, deployedAt: timestamp });
 
-    return new Response(JSON.stringify({ success: true, scriptName: body.scriptName, deployedAt: timestamp } as DeployResponseBody), {
-      status: 200, headers: { "content-type": "application/json" }
-    });
+    return new Response(
+      JSON.stringify({ success: true, scriptName: body.scriptName, deployedAt: timestamp } as DeployResponseBody),
+      { status: 200, headers: { "content-type": "application/json" } }
+    );
   } catch (err) {
     console.error(err);
-    return new Response(JSON.stringify({ success: false, error: (err as Error).message } as DeployResponseBody), {
-      status: 500, headers: { "content-type": "application/json" }
-    });
+    return new Response(
+      JSON.stringify({ success: false, error: (err as Error).message } as DeployResponseBody),
+      { status: 500, headers: { "content-type": "application/json" } }
+    );
   }
 }
 
@@ -116,8 +131,8 @@ async function handleAuth(request: Request, env: Env): Promise<Response> {
   try {
     const body = (await request.json()) as AuthRequestBody;
 
-    // Simple session logic for example
-    const sessionId = crypto.randomUUID();
+    // Simple session logic
+    const sessionId = globalThis.crypto.randomUUID();
     const now = new Date().toISOString();
     const session = {
       sessionId,
@@ -130,13 +145,15 @@ async function handleAuth(request: Request, env: Env): Promise<Response> {
       await env.AUTH_STORAGE.put(sessionId, JSON.stringify(session), { expirationTtl: 3600 });
     }
 
-    return new Response(JSON.stringify({ success: true, session } as AuthResponseBody), {
-      status: 200, headers: { "content-type": "application/json" }
-    });
+    return new Response(
+      JSON.stringify({ success: true, session } as AuthResponseBody),
+      { status: 200, headers: { "content-type": "application/json" } }
+    );
   } catch (err) {
     console.error(err);
-    return new Response(JSON.stringify({ success: false, error: (err as Error).message } as AuthResponseBody), {
-      status: 500, headers: { "content-type": "application/json" }
-    });
+    return new Response(
+      JSON.stringify({ success: false, error: (err as Error).message } as AuthResponseBody),
+      { status: 500, headers: { "content-type": "application/json" } }
+    );
   }
 }
