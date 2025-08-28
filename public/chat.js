@@ -3,22 +3,29 @@ const userInput = document.getElementById("user-input");
 const sendButton = document.getElementById("send-button");
 const typingIndicator = document.getElementById("typing-indicator");
 
-let chatHistory = [{ role: "assistant", content: "Hey There! I'm Pick of Gods AI. How can I assist you today?" }];
+let chatHistory = [
+  { role: "assistant", content: "Hello! I'm Pick of Gods AI. How can I assist you today?" }
+];
 let isProcessing = false;
 
-userInput.addEventListener("input", function() {
+// Auto-resize textarea
+userInput.addEventListener("input", function () {
   this.style.height = "auto";
   this.style.height = this.scrollHeight + "px";
 });
 
-userInput.addEventListener("keydown", function(e) {
-  if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); sendMessage(); }
+// Enter to send
+userInput.addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
+
 sendButton.addEventListener("click", sendMessage);
 
+// --- Send chat message ---
 async function sendMessage() {
   const msg = userInput.value.trim();
-  if(!msg || isProcessing) return;
+  if (!msg || isProcessing) return;
+
   isProcessing = true;
   userInput.disabled = true;
   sendButton.disabled = true;
@@ -29,6 +36,14 @@ async function sendMessage() {
   userInput.style.height = "auto";
   typingIndicator.classList.add("visible");
 
+  // Handle image generation commands
+  if (msg.toLowerCase().startsWith("/image")) {
+    const prompt = msg.replace("/image", "").trim();
+    await generateImage(prompt);
+    resetInput();
+    return;
+  }
+
   try {
     const assistantEl = document.createElement("div");
     assistantEl.className = "message assistant-message";
@@ -36,18 +51,48 @@ async function sendMessage() {
     chatMessages.appendChild(assistantEl);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type":"application/json" }, body: JSON.stringify({ messages: chatHistory }) });
-    if(!response.ok) throw new Error("Failed to get response");
-    const data = await response.json();
-    const text = data.response || "Oops! Something went wrong.";
-    await appendNeonText(assistantEl.querySelector("p"), text);
-    chatHistory.push({ role:"assistant", content:text });
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: chatHistory, stream: true })
+    });
 
-  } catch(err) { console.error(err); addMessage("assistant","Oops! Something went wrong."); }
-  finally { typingIndicator.classList.remove("visible"); isProcessing=false; userInput.disabled=false; sendButton.disabled=false; userInput.focus(); }
+    if (!response.ok) throw new Error("Failed to get response");
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let responseText = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split("\n");
+
+      for (const line of lines) {
+        try {
+          const jsonData = JSON.parse(line);
+          if (jsonData.response) {
+            await appendNeonText(assistantEl.querySelector("p"), jsonData.response);
+            responseText += jsonData.response;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+          }
+        } catch (e) { console.error(e); }
+      }
+    }
+
+    chatHistory.push({ role: "assistant", content: responseText });
+  } catch (err) {
+    console.error(err);
+    addMessage("assistant", "Oops! Something went wrong.");
+  } finally {
+    resetInput();
+  }
 }
 
-function addMessage(role, content){
+// --- Add message to DOM ---
+function addMessage(role, content) {
   const el = document.createElement("div");
   el.className = `message ${role}-message`;
   el.innerHTML = `<p>${content}</p>`;
@@ -55,12 +100,55 @@ function addMessage(role, content){
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-async function appendNeonText(container, text){
-  for(const char of text){
+// --- Neon typing effect ---
+async function appendNeonText(container, text) {
+  for (const char of text) {
     container.innerHTML += `<span class="neon-char">${char}</span>`;
     chatMessages.scrollTop = chatMessages.scrollHeight;
     await delay(20);
   }
 }
 
-function delay(ms){ return new Promise(resolve=>setTimeout(resolve, ms)); }
+function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+function resetInput() {
+  typingIndicator.classList.remove("visible");
+  isProcessing = false;
+  userInput.disabled = false;
+  sendButton.disabled = false;
+  userInput.focus();
+}
+
+// --- Generate Image ---
+async function generateImage(prompt) {
+  try {
+    addMessage("assistant", "Generating image...");
+    const response = await fetch("/api/image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt })
+    });
+
+    if (!response.ok) throw new Error("Image generation failed");
+    const blob = await response.blob();
+    const imgURL = URL.createObjectURL(blob);
+
+    const imgEl = document.createElement("img");
+    imgEl.src = imgURL;
+    imgEl.style.maxWidth = "100%";
+    imgEl.style.border = "1px solid #39ff14";
+    imgEl.style.borderRadius = "8px";
+    imgEl.style.marginTop = "0.5rem";
+
+    const el = document.createElement("div");
+    el.className = "message assistant-message";
+    el.appendChild(imgEl);
+    chatMessages.appendChild(el);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    chatHistory.push({ role: "assistant", content: `[Image generated: ${prompt}]` });
+  } catch (err) {
+    console.error(err);
+    addMessage("assistant", "Failed to generate image.");
+  }
+}
