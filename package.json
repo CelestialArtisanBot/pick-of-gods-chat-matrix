@@ -1,23 +1,18 @@
 {
   "name": "pick-of-gods-chat-matrix",
-  "description": "Pick of Gods AI chat with Cloudflare Workers integration",
-  "private": true,
-  "cloudflare": {
-    "label": "Pick of Gods AI Chat",
-    "products": ["Workers", "Workers AI", "Pages"],
-    "categories": ["ai", "chat"],
-    "publish": true
+  "version": "1.0.0",
+  "description": "Pick of Gods AI Chat with Matrix Rain, Cloudflare Workers AI, and image generation",
+  "author": "Pick of Gods",
+  "license": "MIT",
+  "scripts": {
+    "dev": "wrangler dev src/index.ts --local",
+    "build": "tsc",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "dependencies": {
+    "typescript": "^5.2.2"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250425.0",
-    "@types/node": "24.0.4",
-    "typescript": "5.8.3",
-    "wrangler": "4.21.x",
-    "vitest": "3.2.4"
-  },
-  "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler publish",
-    "check": "tsc --noEmit && wrangler deploy --dry-run"
+    "@cloudflare/workers-types": "^4.2025.0"
   }
 }
