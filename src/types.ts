@@ -1,37 +1,28 @@
 /**
- * 📌 Type definitions for the Pick of Gods Chat + Worker Publisher + OpenAuth app.
- * Centralized type contracts for API, Worker bindings, Auth, and Chat operations.
+ * 📌 Type definitions for Pick of Gods Chat + Worker Publisher + OpenAuth + AI Image endpoints.
+ * Covers chat messages, API requests/responses, auth, worker publishing, and environment bindings.
  */
 
 //////////////////////
 // 🔹 Chat Types
 //////////////////////
 
-/**
- * Represents a chat message exchanged in the system.
- */
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
-  timestamp?: string; // ISO timestamp
-  id?: string; // Optional message ID
+  timestamp?: string;             // ISO timestamp
+  id?: string;                    // Unique message ID
   metadata?: Record<string, any>; // Optional extensibility
 }
 
-/**
- * Request body for chat endpoint.
- */
 export interface ChatRequestBody {
   messages: ChatMessage[];
-  stream?: boolean; // Enable streaming responses
+  stream?: boolean;               // Enable streaming responses
   maxTokens?: number;
   temperature?: number;
   topP?: number;
 }
 
-/**
- * Response body from chat endpoint.
- */
 export interface ChatResponseBody {
   messages: ChatMessage[];
   usage?: {
@@ -47,20 +38,14 @@ export interface ChatResponseBody {
 // 🔹 Worker Publisher Types
 //////////////////////
 
-/**
- * Request body for deploying a worker.
- */
 export interface DeployRequestBody {
   scriptName: string;
   code: string;
   routes?: string[];
-  envVars?: Record<string, string>;
+  envVars?: Record<string,string>;
   compatibilityDate?: string;
 }
 
-/**
- * Deployment response.
- */
 export interface DeployResponseBody {
   success: boolean;
   workerId?: string;
@@ -69,9 +54,6 @@ export interface DeployResponseBody {
   error?: string;
 }
 
-/**
- * Dispatcher registry for deployed workers.
- */
 export type DispatcherRegistry = Map<
   string,
   {
@@ -85,18 +67,12 @@ export type DispatcherRegistry = Map<
 // 🔹 OpenAuth Types
 //////////////////////
 
-/**
- * Authenticated subject.
- */
 export interface AuthSubject {
   type: "user" | "service";
   user?: UserSubject;
   service?: ServiceSubject;
 }
 
-/**
- * User payload.
- */
 export interface UserSubject {
   id: string;
   email?: string;
@@ -106,33 +82,24 @@ export interface UserSubject {
   updatedAt?: string;
 }
 
-/**
- * Service account payload.
- */
 export interface ServiceSubject {
   id: string;
   name: string;
   permissions: string[];
 }
 
-/**
- * Authentication session data.
- */
 export interface AuthSession {
   sessionId: string;
   subject: AuthSubject;
   issuedAt: string;
   expiresAt: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string,any>;
 }
 
-/**
- * Auth request payloads.
- */
 export interface AuthRequestBody {
   email?: string;
   password?: string;
-  token?: string; // For API tokens or refresh
+  token?: string;
 }
 
 export interface AuthResponseBody {
@@ -142,42 +109,57 @@ export interface AuthResponseBody {
 }
 
 //////////////////////
+// 🔹 AI Image Generation Types
+//////////////////////
+
+export interface ImageRequestBody {
+  prompt: string;
+  width?: number;
+  height?: number;
+  steps?: number;
+  seed?: number;
+}
+
+export interface ImageResponseBody {
+  imageBase64: string;
+  success: boolean;
+  error?: string;
+}
+
+//////////////////////
 // 🔹 Worker Environment Bindings
 //////////////////////
 
 export interface Env {
-  // --- Chat bindings ---
+  // --- Chat ---
   AI: any; // Workers AI binding
   ASSETS: { fetch: (request: Request) => Promise<Response> };
 
-  // --- Worker Publisher bindings ---
+  // --- Worker Publisher ---
   DISPATCHER?: DispatcherRegistry;
   CLOUDFLARE_API_TOKEN?: string;
   CLOUDFLARE_ACCOUNT_ID?: string;
   READONLY?: boolean | string;
 
-  // --- OpenAuth bindings ---
+  // --- OpenAuth ---
   AUTH_STORAGE?: KVNamespace | DurableObjectNamespace;
   AUTH_DB?: D1Database;
+
+  // --- Image Generation ---
+  // Placeholder: any other AI image endpoints
 }
 
 //////////////////////
 // 🔹 Utility Types
 //////////////////////
 
-/**
- * Standardized error type for all APIs.
- */
 export interface ApiError {
   code: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string,any>;
 }
 
-/**
- * Generic API response wrapper.
- */
-export interface ApiResponse<T = unknown> {
+export interface ApiResponse<T=unknown> {
   success: boolean;
   data?: T;
   error?: ApiError;
