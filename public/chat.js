@@ -1,154 +1,84 @@
-const chatMessages = document.getElementById("chat-messages");
-const userInput = document.getElementById("user-input");
-const sendButton = document.getElementById("send-button");
-const typingIndicator = document.getElementById("typing-indicator");
+// --- Matrix Rain ---
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-let chatHistory = [
-  { role: "assistant", content: "Hello! I'm Pick of Gods AI. How can I assist you today?" }
-];
-let isProcessing = false;
+const cols = Math.floor(canvas.width / 20);
+const ypos = Array(cols).fill(0);
 
-// Auto-resize textarea
-userInput.addEventListener("input", function () {
-  this.style.height = "auto";
-  this.style.height = this.scrollHeight + "px";
+function matrixLoop() {
+  ctx.fillStyle = 'rgba(0,0,0,0.05)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#00ff00';
+  ctx.font = '20px monospace';
+  ypos.forEach((y, index) => {
+    const text = String.fromCharCode(33 + Math.random() * 94);
+    ctx.fillText(text, index * 20, y);
+    ypos[index] = y > canvas.height + Math.random() * 10000 ? 0 : y + 20;
+  });
+}
+setInterval(matrixLoop, 50);
+
+// --- Chat Frontend ---
+const chatContainer = document.getElementById('chat-container');
+const inputForm = document.getElementById('input-form');
+const messageInput = document.getElementById('message-input');
+
+const addBubble = (text, role) => {
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ' + role;
+  bubble.textContent = text;
+  chatContainer.appendChild(bubble);
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+};
+
+// --- Streaming AI Response ---
+async function sendMessage(message) {
+  addBubble(message, 'user');
+
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages: [{ role: 'user', content: message }], stream: false })
+  });
+
+  const data = await res.json();
+  if (!data.success) return addBubble("AI error: " + data.error, 'assistant');
+
+  const aiMessage = data.messages[data.messages.length - 1]?.content || '...';
+  addBubble(aiMessage, 'assistant');
+}
+
+// --- Form Submit ---
+inputForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const msg = messageInput.value.trim();
+  if (!msg) return;
+  messageInput.value = '';
+  sendMessage(msg);
 });
 
-// Enter to send
-userInput.addEventListener("keydown", function (e) {
-  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-});
+// --- Optional Floating Bubbles for Matrix AI feel ---
+function floatingBubbleEffect() {
+  const bubble = document.createElement('div');
+  bubble.textContent = String.fromCharCode(33 + Math.floor(Math.random() * 94));
+  bubble.style.position = 'absolute';
+  bubble.style.left = Math.random() * window.innerWidth + 'px';
+  bubble.style.top = window.innerHeight + 'px';
+  bubble.style.color = '#00ff00';
+  bubble.style.fontSize = 16 + Math.random() * 12 + 'px';
+  bubble.style.opacity = Math.random();
+  document.body.appendChild(bubble);
 
-sendButton.addEventListener("click", sendMessage);
-
-// --- Send chat message ---
-async function sendMessage() {
-  const msg = userInput.value.trim();
-  if (!msg || isProcessing) return;
-
-  isProcessing = true;
-  userInput.disabled = true;
-  sendButton.disabled = true;
-
-  addMessage("user", msg);
-  chatHistory.push({ role: "user", content: msg });
-  userInput.value = "";
-  userInput.style.height = "auto";
-  typingIndicator.classList.add("visible");
-
-  // Handle image generation commands
-  if (msg.toLowerCase().startsWith("/image")) {
-    const prompt = msg.replace("/image", "").trim();
-    await generateImage(prompt);
-    resetInput();
-    return;
-  }
-
-  try {
-    const assistantEl = document.createElement("div");
-    assistantEl.className = "message assistant-message";
-    assistantEl.innerHTML = "<p></p><span class='cursor'>█</span>";
-    chatMessages.appendChild(assistantEl);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: chatHistory, stream: true })
-    });
-
-    if (!response.ok) throw new Error("Failed to get response");
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let responseText = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split("\n");
-
-      for (const line of lines) {
-        try {
-          const jsonData = JSON.parse(line);
-          if (jsonData.response) {
-            await appendNeonText(assistantEl.querySelector("p"), jsonData.response);
-            responseText += jsonData.response;
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-          }
-        } catch (e) { console.error(e); }
-      }
+  let top = window.innerHeight;
+  const interval = setInterval(() => {
+    top -= 2 + Math.random() * 2;
+    bubble.style.top = top + 'px';
+    if (top < -50) {
+      clearInterval(interval);
+      bubble.remove();
     }
-
-    chatHistory.push({ role: "assistant", content: responseText });
-  } catch (err) {
-    console.error(err);
-    addMessage("assistant", "Oops! Something went wrong.");
-  } finally {
-    resetInput();
-  }
+  }, 50);
 }
-
-// --- Add message to DOM ---
-function addMessage(role, content) {
-  const el = document.createElement("div");
-  el.className = `message ${role}-message`;
-  el.innerHTML = `<p>${content}</p>`;
-  chatMessages.appendChild(el);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-// --- Neon typing effect ---
-async function appendNeonText(container, text) {
-  for (const char of text) {
-    container.innerHTML += `<span class="neon-char">${char}</span>`;
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-    await delay(20);
-  }
-}
-
-function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
-
-function resetInput() {
-  typingIndicator.classList.remove("visible");
-  isProcessing = false;
-  userInput.disabled = false;
-  sendButton.disabled = false;
-  userInput.focus();
-}
-
-// --- Generate Image ---
-async function generateImage(prompt) {
-  try {
-    addMessage("assistant", "Generating image...");
-    const response = await fetch("/api/image", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt })
-    });
-
-    if (!response.ok) throw new Error("Image generation failed");
-    const blob = await response.blob();
-    const imgURL = URL.createObjectURL(blob);
-
-    const imgEl = document.createElement("img");
-    imgEl.src = imgURL;
-    imgEl.style.maxWidth = "100%";
-    imgEl.style.border = "1px solid #39ff14";
-    imgEl.style.borderRadius = "8px";
-    imgEl.style.marginTop = "0.5rem";
-
-    const el = document.createElement("div");
-    el.className = "message assistant-message";
-    el.appendChild(imgEl);
-    chatMessages.appendChild(el);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-
-    chatHistory.push({ role: "assistant", content: `[Image generated: ${prompt}]` });
-  } catch (err) {
-    console.error(err);
-    addMessage("assistant", "Failed to generate image.");
-  }
-}
+setInterval(floatingBubbleEffect, 300);
