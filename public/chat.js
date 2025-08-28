@@ -1,79 +1,35 @@
-const chatMessages = document.getElementById("chat-messages");
-const userInput = document.getElementById("user-input");
-const sendButton = document.getElementById("send-button");
-const typingIndicator = document.getElementById("typing-indicator");
+const messagesEl = document.getElementById("messages");
+const inputEl = document.getElementById("chat-input");
+const sendBtn = document.getElementById("send-btn");
 
-let chatHistory = [{ role: "assistant", content: "Hello! I'm Pick of Gods AI. How can I assist you today?" }];
-let isProcessing = false;
-
-userInput.addEventListener("input", function() {
-  this.style.height = "auto";
-  this.style.height = this.scrollHeight + "px";
-});
-
-userInput.addEventListener("keydown", function(e) {
-  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-});
-sendButton.addEventListener("click", sendMessage);
+function appendMessage(text, sender = "user") {
+  const bubble = document.createElement("div");
+  bubble.className = sender === "user" ? "bubble user" : "bubble bot";
+  bubble.innerText = text;
+  messagesEl.appendChild(bubble);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
 
 async function sendMessage() {
-  const msg = userInput.value.trim();
-  if (!msg || isProcessing) return;
-
-  isProcessing = true;
-  userInput.disabled = true;
-  sendButton.disabled = true;
-
-  addMessage("user", msg);
-  chatHistory.push({ role: "user", content: msg });
-  userInput.value = "";
-  userInput.style.height = "auto";
-  typingIndicator.classList.add("visible");
+  const text = inputEl.value.trim();
+  if (!text) return;
+  appendMessage(text, "user");
+  inputEl.value = "";
 
   try {
-    const assistantEl = document.createElement("div");
-    assistantEl.className = "message assistant-message";
-    assistantEl.innerHTML = "<p></p><span class='cursor'>█</span>";
-    chatMessages.appendChild(assistantEl);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-
-    const response = await fetch("/api/chat", {
+    const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: chatHistory })
+      body: JSON.stringify({ message: text }),
     });
-
-    if (!response.ok) throw new Error("Failed to get response");
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let responseText = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split("\n");
-
-      for (const line of lines) {
-        try {
-          const jsonData = JSON.parse(line);
-          if (jsonData.response) {
-            await appendNeonText(assistantEl.querySelector("p"), jsonData.response);
-            responseText += jsonData.response;
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-          }
-        } catch (e) { console.error(e); }
-      }
-    }
-
-    chatHistory.push({ role: "assistant", content: responseText });
+    const data = await res.json();
+    appendMessage(data.reply, "bot");
   } catch (err) {
-    console.error(err);
-    addMessage("assistant", "Oops! Something went wrong.");
-  } finally {
-    typingIndicator.classList.remove("visible");
-    isProcessing = false;
-    userInput.disabled = false;
-    sendButton.disabled = false
+    appendMessage("⚠️ Error: " + err.message, "bot");
+  }
+}
+
+sendBtn.addEventListener("click", sendMessage);
+inputEl.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") sendMessage();
+});
