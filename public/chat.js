@@ -1,35 +1,8 @@
-// ---- Matrix rain effect ----
-const canvas = document.getElementById('matrix');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-const columns = Math.floor(canvas.width / 20);
-const drops = Array(columns).fill(1);
-
-function drawMatrix() {
-  ctx.fillStyle = 'rgba(0,0,0,0.05)';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle = '#0F0';
-  ctx.font = '20px Courier';
-
-  drops.forEach((y,i) => {
-    const text = String.fromCharCode(33 + Math.random() * 94);
-    ctx.fillText(text, i*20, y*20);
-    drops[i] = y*20 > canvas.height && Math.random() > 0.975 ? 0 : y+1;
-  });
-  requestAnimationFrame(drawMatrix);
-}
-drawMatrix();
-window.addEventListener('resize', ()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; });
-
-// ---- Chat memory + tabs ----
 const chatEl = document.getElementById('chat');
 const inputEl = document.getElementById('input');
 const sendBtn = document.getElementById('send');
 const tabsEl = document.getElementById('tabs');
 const newTabBtn = document.getElementById('newTab');
-const refreshImagesBtn = document.getElementById('refreshImages');
 
 let chatMemory = JSON.parse(localStorage.getItem('chatMemory') || '{}');
 let activeTab = Object.keys(chatMemory)[0] || createNewTab();
@@ -66,65 +39,73 @@ function renderChat() {
   messages.forEach(msg => {
     const div = document.createElement('div');
     div.className = 'chat-message ' + msg.role;
-    if(msg.role==='assistant' && msg.imageBase64){
-      div.innerHTML = `<img class="generated" src="data:image/png;base64,${msg.imageBase64}">`;
+    if(msg.content.startsWith('<img')) {
+      div.innerHTML = msg.content;
+    } else {
+      div.innerHTML = `<pre>${msg.content}</pre>`;
     }
-    div.innerHTML += `<pre>${msg.content || ''}</pre>`;
-    div.onclick = () => navigator.clipboard.writeText(msg.content);
+    div.onclick = () => copyToClipboard(msg.content.replace(/<[^>]+>/g,''));
     chatEl.appendChild(div);
   });
   chatEl.scrollTop = chatEl.scrollHeight;
 }
 
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text);
+  alert('Copied message!');
+}
+
 async function sendMessage() {
   const content = inputEl.value.trim();
-  if (!content) return;
+  if(!content) return;
   addMessage('user', content);
   inputEl.value = '';
 
-  // Chat API
-  const chatResp = await fetch('/api/chat', {
-    method:'POST',
-    headers:{ 'Content-Type':'application/json' },
-    body: JSON.stringify({ messages: chatMemory[activeTab] })
-  });
-  const data = await chatResp.json();
-  if(data.success && data.messages){
-    data.messages.slice(chatMemory[activeTab].length).forEach(msg => addMessage(msg.role, msg.content));
-    // Auto-generate image for last message
-    generateImage(data.messages.slice(-1)[0].content);
+  // --- Check for image commands ---
+  const imageTrigger = content.match(/^\/image\s+(.+)/i);
+  const triggerWords = ["draw","illustrate","show me","visualize","paint"];
+  let isImage = false;
+  let prompt = '';
+
+  if(imageTrigger) { 
+    isImage = true; 
+    prompt = imageTrigger[1]; 
+  } else if(triggerWords.some(w => content.toLowerCase().includes(w))) {
+    isImage = true; 
+    prompt = content;
+  }
+
+  if(isImage) {
+    const resp = await fetch('/api/image', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ prompt })
+    });
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    addMessage('assistant', `<img src="${url}" style="max-width:100%;">`);
   } else {
-    addMessage('assistant','Error: '+(data.error||'Unknown'));
+    const resp = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ messages: chatMemory[activeTab] })
+    });
+    const data = await resp.json();
+    if(data.success && data.messages)
+      data.messages.slice(chatMemory[activeTab].length).forEach(msg => addMessage(msg.role, msg.content));
+    else addMessage('assistant','Error: '+(data.error||'Unknown'));
   }
 }
 
-function addMessage(role, content, imageBase64) {
-  chatMemory[activeTab].push({ role, content, imageBase64, timestamp: new Date().toISOString() });
+function addMessage(role, content) {
+  chatMemory[activeTab].push({ role, content, timestamp: new Date().toISOString() });
   localStorage.setItem('chatMemory', JSON.stringify(chatMemory));
   renderChat();
 }
 
-// ---- Image generation ----
-async function generateImage(prompt) {
-  const resp = await fetch('/api/image', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({prompt, width:1024, height:1024, steps:25})
-  });
-  const data = await resp.json();
-  if(data.success && data.imageBase64){
-    addMessage('assistant', '', data.imageBase64);
-  }
-}
-
-// ---- Controls ----
 sendBtn.onclick = sendMessage;
 inputEl.addEventListener('keydown', e => { if(e.key==='Enter') sendMessage(); });
 newTabBtn.onclick = () => createNewTab();
-refreshImagesBtn.onclick = () => {
-  const lastMsg = chatMemory[activeTab].slice(-1)[0];
-  if(lastMsg) generateImage(lastMsg.content);
-};
 
 renderTabs();
 renderChat();
