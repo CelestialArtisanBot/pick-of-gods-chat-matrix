@@ -1,5 +1,7 @@
+export type Role = "system" | "user" | "assistant";
+
 export interface ChatMessage {
-  role: "system" | "user" | "assistant";
+  role: Role;
   content: string;
   timestamp?: string;
   id?: string;
@@ -25,6 +27,20 @@ export interface ChatResponseBody {
   error?: string;
 }
 
+export interface ImageRequestBody {
+  prompt: string;
+  width?: number;
+  height?: number;
+  steps?: number;
+  seed?: number;
+}
+
+export interface ImageResponseBody {
+  imageBase64?: string;
+  success: boolean;
+  error?: string;
+}
+
 export interface DeployRequestBody {
   scriptName: string;
   code: string;
@@ -41,37 +57,48 @@ export interface DeployResponseBody {
   error?: string;
 }
 
+// -----------------------
+// 🔹 Auth Types
+// -----------------------
 export interface AuthRequestBody {
   email?: string;
   password?: string;
   token?: string;
 }
 
+export interface UserSubject {
+  type: "user";
+  user: { id: string };
+}
+
+export interface AuthSubject {
+  type: string;
+  [key: string]: any;
+}
+
+export interface AuthSession {
+  sessionId: string;
+  subject: AuthSubject | UserSubject;
+  issuedAt: string;
+  expiresAt: string;
+}
+
 export interface AuthResponseBody {
   success: boolean;
-  session?: any;
+  session?: AuthSession;
   error?: string;
 }
 
-export interface ImageRequestBody {
-  prompt: string;
-  width?: number;
-  height?: number;
-  steps?: number;
-  seed?: number;
-}
-
-export interface ImageResponseBody {
-  imageBase64: string;
-  success: boolean;
-  error?: string;
-}
-
+// -----------------------
+// 🔹 Environment Types
+// -----------------------
 export interface Env {
-  AI: any;
+  AI: any; // Cloudflare AI binding
   ASSETS: { fetch(request: Request): Promise<Response> };
-  DISPATCHER?: Map<string, any>;
+  DISPATCHER?: Map<string, any>; // In-memory deployment map
   AUTH_STORAGE?: KVNamespace;
+
+  // Optional Cloudflare deployment environment variables
   CLOUDFLARE_API_TOKEN?: string;
   CLOUDFLARE_ACCOUNT_ID?: string;
   READONLY?: boolean;
