@@ -2,23 +2,35 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Pick of Gods Chat</title>
-<link rel="stylesheet" href="style.css">
+<title>Pick of Gods AI Chat</title>
+<style>
+  body { margin:0; background:black; color:#00ff00; font-family:'Courier New', monospace; overflow:hidden; }
+  canvas#matrix { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; }
+  #container { position:relative; z-index:1; max-width:800px; margin:0 auto; padding:10px; }
+  #tabs { display:flex; gap:10px; padding:10px; overflow-x:auto; }
+  .tab { padding:5px 10px; border:1px solid #00ff00; cursor:pointer; }
+  .tab.active { background:#00ff00; color:black; }
+  #chat { border:1px solid #00ff00; overflow-y:auto; height:60vh; padding:10px; }
+  .chat-message.user { text-align:right; }
+  .chat-message.assistant { text-align:left; }
+  .controls { display:flex; gap:10px; margin-top:5px; }
+  input[type=text] { flex:1; background:black; color:#00ff00; border:1px solid #00ff00; padding:5px; }
+  button { background:black; color:#00ff00; border:1px solid #00ff00; cursor:pointer; padding:5px 10px; }
+  img.generated { max-width:100%; margin-top:10px; border:1px solid #00ff00; }
+</style>
 </head>
 <body>
-<canvas id="matrixCanvas"></canvas>
-
-<div id="tabs"></div>
-<div id="chat"></div>
-<div class="controls">
-  <input id="input" type="text" placeholder="Type a message..." style="flex:1;">
-  <button id="send">Send</button>
-  <button id="newTab">New Memory</button>
-  <button id="imageBtn">Generate Image</button>
-  <input id="imagePrompt" placeholder="Image prompt..." style="flex:1;">
-  <input type="number" id="imageCount" min="1" max="5" value="1">
+<canvas id="matrix"></canvas>
+<div id="container">
+  <div id="tabs"></div>
+  <div id="chat"></div>
+  <div class="controls">
+    <input id="input" type="text" placeholder="Type a message...">
+    <button id="send">Send</button>
+    <button id="newTab">New Memory</button>
+    <button id="refreshImages">Refresh Images</button>
+  </div>
 </div>
-
 <script src="chat.js"></script>
 </body>
 </html>
