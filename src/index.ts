@@ -11,9 +11,6 @@ import {
   ChatMessage
 } from "./types";
 
-/**
- * Pick of Gods Worker - Chat + Image + Deployment + Auth
- */
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -45,12 +42,12 @@ export default {
     }
 
     return new Response("Not found", { status: 404 });
-  },
+  }
 } satisfies ExportedHandler<Env>;
 
-//////////////////////
+// =========================
 // 🔹 Handlers
-//////////////////////
+// =========================
 
 // --- Chat ---
 async function handleChat(request: Request, env: Env): Promise<Response> {
@@ -58,7 +55,6 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
     const body = (await request.json()) as ChatRequestBody;
     const messages: ChatMessage[] = body.messages || [];
 
-    // Inject system prompt if missing
     if (!messages.some(m => m.role === "system")) {
       messages.unshift({ role: "system", content: "You are Pick of Gods AI, helpful and concise." });
     }
@@ -87,9 +83,9 @@ async function handleImage(request: Request, env: Env): Promise<Response> {
 
     const result = await env.AI.run("@cf/stabilityai/stable-diffusion-xl-base-1.0", {
       prompt: body.prompt,
-      width: body.width || 512,
-      height: body.height || 512,
-      steps: body.steps || 20,
+      width: body.width || 1024,
+      height: body.height || 1024,
+      steps: body.steps || 25,
       seed: body.seed || Math.floor(Math.random() * 999999),
     });
 
@@ -103,7 +99,7 @@ async function handleImage(request: Request, env: Env): Promise<Response> {
   }
 }
 
-// --- Deploy Worker ---
+// --- Deploy ---
 async function handleDeploy(request: Request, env: Env): Promise<Response> {
   try {
     if (!env.DISPATCHER) throw new Error("Dispatcher not configured");
@@ -111,10 +107,10 @@ async function handleDeploy(request: Request, env: Env): Promise<Response> {
     const body = (await request.json()) as DeployRequestBody;
     const timestamp = new Date().toISOString();
 
-    env.DISPATCHER.set(body.scriptName, { code: body.code, routes: body.routes, deployedAt: timestamp });
+    env.DISPATCHER.set(body.scriptName, { code: body.code, routes: body.routes || [], deployedAt: timestamp });
 
     return new Response(
-      JSON.stringify({ success: true, scriptName: body.scriptName, deployedAt: timestamp } as DeployResponseBody),
+      JSON.stringify({ success: true, scriptName: body.scriptName, workerId: body.scriptName, routes: body.routes, error: "" } as DeployResponseBody),
       { status: 200, headers: { "content-type": "application/json" } }
     );
   } catch (err) {
@@ -130,15 +126,14 @@ async function handleDeploy(request: Request, env: Env): Promise<Response> {
 async function handleAuth(request: Request, env: Env): Promise<Response> {
   try {
     const body = (await request.json()) as AuthRequestBody;
-
-    // Simple session logic
-    const sessionId = globalThis.crypto.randomUUID();
+    const sessionId = crypto.randomUUID();
     const now = new Date().toISOString();
+
     const session = {
       sessionId,
       subject: { type: "user", user: { id: body.email || "anon" } },
       issuedAt: now,
-      expiresAt: new Date(Date.now() + 1000 * 60 * 60).toISOString()
+      expiresAt: new Date(Date.now() + 3600 * 1000).toISOString()
     };
 
     if (env.AUTH_STORAGE) {
