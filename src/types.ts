@@ -72,4 +72,7 @@ export interface Env {
   ASSETS: { fetch(request: Request): Promise<Response> };
   DISPATCHER?: Map<string, any>;
   AUTH_STORAGE?: KVNamespace;
+  CLOUDFLARE_API_TOKEN?: string;
+  CLOUDFLARE_ACCOUNT_ID?: string;
+  READONLY?: boolean;
 }
