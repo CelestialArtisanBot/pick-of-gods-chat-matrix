@@ -1,0 +1,12 @@
+body { background:black; color:#00ff00; font-family:'Courier New', monospace; margin:0; overflow:hidden; }
+#tabs { display:flex; gap:10px; padding:10px; overflow-x:auto; }
+.tab { padding:5px 10px; border:1px solid #00ff00; cursor:pointer; }
+.tab.active { background:#00ff00; color:black; }
+#chat { max-width:800px; margin:20px auto; padding:10px; border:1px solid #00ff00; overflow-y:auto; height:50vh; }
+.chat-message { margin-bottom:12px; }
+.chat-message.user { text-align:right; }
+.chat-message.assistant { text-align:left; }
+.controls { max-width:800px; margin:0 auto; display:flex; gap:10px; margin-top:5px; flex-wrap:wrap; }
+button { background:black; color:#00ff00; border:1px solid #00ff00; cursor:pointer; }
+pre { margin:0; white-space:pre-wrap; word-wrap:break-word; }
+canvas#matrixCanvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:-1; }
