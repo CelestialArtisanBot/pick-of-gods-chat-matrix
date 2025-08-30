@@ -15,33 +15,30 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    // Serve static assets
     if (url.pathname === "/" || !url.pathname.startsWith("/api/")) {
       return env.ASSETS.fetch(request);
     }
 
-    // --- API Routing ---
-    if (url.pathname.startsWith("/api/chat")) {
-      if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
-      return handleChat(request, env);
-    }
+    switch (true) {
+      case url.pathname.startsWith("/api/chat"):
+        if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
+        return handleChat(request, env);
 
-    if (url.pathname.startsWith("/api/image")) {
-      if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
-      return handleImage(request, env);
-    }
+      case url.pathname.startsWith("/api/image"):
+        if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
+        return handleImage(request, env);
 
-    if (url.pathname.startsWith("/api/deploy")) {
-      if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
-      return handleDeploy(request, env);
-    }
+      case url.pathname.startsWith("/api/deploy"):
+        if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
+        return handleDeploy(request, env);
 
-    if (url.pathname.startsWith("/api/auth")) {
-      if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
-      return handleAuth(request, env);
-    }
+      case url.pathname.startsWith("/api/auth"):
+        if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
+        return handleAuth(request, env);
 
-    return new Response("Not found", { status: 404 });
+      default:
+        return new Response("Not found", { status: 404 });
+    }
   }
 } satisfies ExportedHandler<Env>;
 
@@ -49,7 +46,6 @@ export default {
 // 🔹 Handlers
 // =========================
 
-// --- Chat ---
 async function handleChat(request: Request, env: Env): Promise<Response> {
   try {
     const body = (await request.json()) as ChatRequestBody;
@@ -76,7 +72,6 @@ async function handleChat(request: Request, env: Env): Promise<Response> {
   }
 }
 
-// --- Image ---
 async function handleImage(request: Request, env: Env): Promise<Response> {
   try {
     const body = (await request.json()) as ImageRequestBody;
@@ -99,7 +94,6 @@ async function handleImage(request: Request, env: Env): Promise<Response> {
   }
 }
 
-// --- Deploy ---
 async function handleDeploy(request: Request, env: Env): Promise<Response> {
   try {
     if (!env.DISPATCHER) throw new Error("Dispatcher not configured");
@@ -110,7 +104,7 @@ async function handleDeploy(request: Request, env: Env): Promise<Response> {
     env.DISPATCHER.set(body.scriptName, { code: body.code, routes: body.routes || [], deployedAt: timestamp });
 
     return new Response(
-      JSON.stringify({ success: true, scriptName: body.scriptName, workerId: body.scriptName, routes: body.routes, error: "" } as DeployResponseBody),
+      JSON.stringify({ success: true, scriptName: body.scriptName, workerId: body.scriptName, routes: body.routes || [], error: "" } as DeployResponseBody),
       { status: 200, headers: { "content-type": "application/json" } }
     );
   } catch (err) {
@@ -122,7 +116,6 @@ async function handleDeploy(request: Request, env: Env): Promise<Response> {
   }
 }
 
-// --- Auth ---
 async function handleAuth(request: Request, env: Env): Promise<Response> {
   try {
     const body = (await request.json()) as AuthRequestBody;
