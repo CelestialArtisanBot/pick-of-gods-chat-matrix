@@ -1,7 +1,7 @@
 {
   "name": "pick-of-gods-chat-matrix",
   "version": "1.0.0",
-  "description": "Pick of Gods AI Chat with Matrix Rain, Cloudflare Workers AI, and image generation",
+  "description": "Pick of Gods AI Chat with Matrix Rain, Cloudflare Workers AI, and Image Generation",
   "author": "Pick of Gods",
   "license": "MIT",
   "scripts": {
