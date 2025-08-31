@@ -7,6 +7,7 @@ const chatForm = document.querySelector("#chatForm");
 const chatInput = document.querySelector("#chatInput");
 const chatMessages = document.querySelector("#chatMessages");
 const sendBtn = document.querySelector("#sendBtn");
+const imageToggleBtn = document.querySelector("#toggleImage");
 
 // =============================
 // Signal Apps
@@ -49,9 +50,24 @@ function appendMessage(role, text) {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
+function appendImage(url) {
+  const img = document.createElement("img");
+  img.src = url;
+  img.className = "generated";
+  chatMessages.appendChild(img);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
 // =============================
 // AI Chat API
 // =============================
+let imageMode = false;
+
+imageToggleBtn.addEventListener("click", () => {
+  imageMode = !imageMode;
+  imageToggleBtn.textContent = imageMode ? "🖼️ Image ON" : "🖼️ Image OFF";
+});
+
 async function sendChat(userText) {
   appendMessage("user", userText);
 
@@ -59,14 +75,20 @@ async function sendChat(userText) {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: [{ role: "user", content: userText }] })
+      body: JSON.stringify({
+        messages: [{ role: "user", content: userText }],
+        imageMode
+      })
     });
 
     const data = await res.json();
+
     if (data?.messages) {
       data.messages.forEach(msg => appendMessage(msg.role, msg.content));
-    } else {
-      appendMessage("system", "No response from AI.");
+    }
+
+    if (imageMode && data?.imageUrl) {
+      appendImage(data.imageUrl);
     }
 
     // Signal other apps after chat is processed
