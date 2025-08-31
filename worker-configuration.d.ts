@@ -1,3 +1,15 @@
+// inside your AI chat worker
+async function signalApp(workerUrl: string, payload: any) {
+  try {
+    await fetch(workerUrl + "/signal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    console.error("Signal failed:", err);
+  }
+}
 /// <reference types="@cloudflare/workers-types" />
 
 import type { ChatMessage, ChatRequestBody, ChatResponseBody, ImageRequestBody, ImageResponseBody, DeployRequestBody, DeployResponseBody, AuthRequestBody, AuthResponseBody, AuthSession, Env } from "./types";
