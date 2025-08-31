@@ -1,17 +1,34 @@
-// =============================
-// pick-of-gods-chat-matrix chat.js
-// =============================
-
-// Frontend DOM elements
+// Frontend DOM
 const chatForm = document.querySelector("#chatForm");
 const chatInput = document.querySelector("#chatInput");
 const chatMessages = document.querySelector("#chatMessages");
 const sendBtn = document.querySelector("#sendBtn");
-const imageToggleBtn = document.querySelector("#toggleImage");
+const imgToggleBtn = document.querySelector("#imgToggleBtn");
+const tabs = document.querySelectorAll(".tab-btn");
+const tabContents = document.querySelectorAll(".tab-content");
 
-// =============================
-// Signal Apps
-// =============================
+let imgToggle = false;
+
+// ================== Tabs ==================
+tabs.forEach(btn => {
+  btn.addEventListener("click", () => {
+    tabs.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    tabContents.forEach(tc => tc.classList.remove("active"));
+    document.querySelector(`#${btn.dataset.tab}Tab`).classList.add("active");
+  });
+});
+
+// ================== Messages ==================
+function appendMessage(role, text) {
+  const el = document.createElement("div");
+  el.className = `message ${role}`;
+  el.textContent = text;
+  chatMessages.appendChild(el);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// ================== Signal Apps ==================
 const APPS = [
   "https://r2-explorer-template.celestialartisanbot.workers.dev",
   "https://d1-template.celestialartisanbot.workers.dev",
@@ -19,100 +36,57 @@ const APPS = [
   "https://openauth-template.celestialartisanbot.workers.dev"
 ];
 
-async function signalApp(workerUrl, payload) {
+async function signalApp(url, payload) {
   try {
-    const res = await fetch(workerUrl + "/api/signal", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch(url + "/api/signal", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
       body: JSON.stringify(payload)
     });
-    const data = await res.json();
-    console.log(`Signal to ${workerUrl}:`, data);
-  } catch (err) {
-    console.error(`Signal failed for ${workerUrl}:`, err);
-  }
+    console.log(await res.json());
+  } catch(err){ console.error(err); }
 }
 
-async function notifyApps(payload) {
-  for (const url of APPS) {
-    signalApp(url, payload);
-  }
-}
+function notifyApps(payload){ APPS.forEach(url=>signalApp(url,payload)); }
 
-// =============================
-// Chat UI Handling
-// =============================
-function appendMessage(role, text) {
-  const messageEl = document.createElement("div");
-  messageEl.className = `message ${role}`;
-  messageEl.textContent = text;
-  chatMessages.appendChild(messageEl);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-function appendImage(url) {
-  const img = document.createElement("img");
-  img.src = url;
-  img.className = "generated";
-  chatMessages.appendChild(img);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-// =============================
-// AI Chat API
-// =============================
-let imageMode = false;
-
-imageToggleBtn.addEventListener("click", () => {
-  imageMode = !imageMode;
-  imageToggleBtn.textContent = imageMode ? "🖼️ Image ON" : "🖼️ Image OFF";
-});
-
-async function sendChat(userText) {
+// ================== Chat ==================
+async function sendChat(userText){
   appendMessage("user", userText);
+
+  let body = { messages:[{ role:"user", content:userText }] };
+  if(imgToggle) body.generateImage = true;
 
   try {
     const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: [{ role: "user", content: userText }],
-        imageMode
-      })
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(body)
     });
-
     const data = await res.json();
+    if(data?.messages) data.messages.forEach(m=>appendMessage(m.role,m.content));
+    else appendMessage("ai","No response from AI.");
 
-    if (data?.messages) {
-      data.messages.forEach(msg => appendMessage(msg.role, msg.content));
-    }
-
-    if (imageMode && data?.imageUrl) {
-      appendImage(data.imageUrl);
-    }
-
-    // Signal other apps after chat is processed
-    notifyApps({ action: "chatUpdate", message: userText });
-  } catch (err) {
-    console.error("Chat request failed:", err);
-    appendMessage("system", "Error sending chat.");
-  }
+    notifyApps({ action:"chatUpdate", message:userText });
+  } catch(err){ appendMessage("ai","Error sending chat."); console.error(err); }
 }
 
-// =============================
-// Event Listeners
-// =============================
-chatForm.addEventListener("submit", async (e) => {
+// ================== Event Listeners ==================
+chatForm.addEventListener("submit", e=>{
   e.preventDefault();
-  const text = chatInput.value.trim();
-  if (!text) return;
-  chatInput.value = "";
-  await sendChat(text);
+  const txt = chatInput.value.trim();
+  if(!txt) return;
+  chatInput.value="";
+  sendChat(txt);
 });
 
-sendBtn.addEventListener("click", async () => {
-  const text = chatInput.value.trim();
-  if (!text) return;
-  chatInput.value = "";
-  await sendChat(text);
+sendBtn.addEventListener("click", ()=>{
+  const txt = chatInput.value.trim();
+  if(!txt) return;
+  chatInput.value="";
+  sendChat(txt);
+});
+
+imgToggleBtn.addEventListener("click", ()=>{
+  imgToggle = !imgToggle;
+  imgToggleBtn.textContent = imgToggle ? "Image ON" : "Generate Image";
 });
