@@ -1,111 +1,72 @@
-const chatEl = document.getElementById('chat');
-const inputEl = document.getElementById('input');
-const sendBtn = document.getElementById('send');
-const tabsEl = document.getElementById('tabs');
-const newTabBtn = document.getElementById('newTab');
+// === Define endpoints through the hub Worker ===
+const endpointMap = {
+  chat: "/routes/chat/tab/chat",
+  t2i: "/routes/chat/tab/t2i",
+  globe: "/routes/chat/tab/globe",
+  r2: "/routes/chat/tab/r2",
+  d1: "/routes/chat/tab/d1",
+  auth: "/routes/chat/tab/auth"
+};
 
-let chatMemory = JSON.parse(localStorage.getItem('chatMemory') || '{}');
-let activeTab = Object.keys(chatMemory)[0] || createNewTab();
+// === Elements ===
+const tabContainer = document.getElementById("tabs");
+const contentContainer = document.getElementById("content");
+const chatForm = document.getElementById("chat-form");
+const chatInput = document.getElementById("chat-input");
+const chatMessages = document.getElementById("chat-messages");
 
-function createNewTab(name) {
-  const tabId = name || 'Memory ' + (Object.keys(chatMemory).length + 1);
-  chatMemory[tabId] = chatMemory[tabId] || [];
-  localStorage.setItem('chatMemory', JSON.stringify(chatMemory));
-  renderTabs();
-  switchTab(tabId);
-  return tabId;
+let currentTab = "chat";
+
+// === Function to switch tabs ===
+async function switchTab(tabName) {
+  currentTab = tabName;
+  const endpoint = endpointMap[tabName];
+  
+  // Fetch Worker front-end content
+  const res = await fetch(endpoint);
+  const html = await res.text();
+  contentContainer.innerHTML = html;
+
+  // Rebind chat if AI chat tab
+  if (tabName === "chat") bindChat();
 }
 
-function renderTabs() {
-  tabsEl.innerHTML = '';
-  Object.keys(chatMemory).forEach(tab => {
-    const btn = document.createElement('button');
-    btn.textContent = tab;
-    btn.className = 'tab' + (tab === activeTab ? ' active' : '');
-    btn.onclick = () => switchTab(tab);
-    tabsEl.appendChild(btn);
+// === Send chat message ===
+async function sendChatMessage(message) {
+  const res = await fetch("/routes/chat/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message })
+  });
+  const data = await res.json();
+  appendMessage("AI", data.reply);
+}
+
+// === Append message to chat window ===
+function appendMessage(sender, text) {
+  const msgEl = document.createElement("div");
+  msgEl.className = `message ${sender.toLowerCase()}`;
+  msgEl.textContent = `${sender}: ${text}`;
+  chatMessages.appendChild(msgEl);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// === Bind form submit ===
+function bindChat() {
+  chatForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = chatInput.value.trim();
+    if (!msg) return;
+    appendMessage("You", msg);
+    chatInput.value = "";
+    await sendChatMessage(msg);
   });
 }
 
-function switchTab(tabId) {
-  activeTab = tabId;
-  renderTabs();
-  renderChat();
-}
+// === Bind tab buttons dynamically ===
+document.querySelectorAll(".tab-button").forEach(btn => {
+  btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+});
 
-function renderChat() {
-  chatEl.innerHTML = '';
-  const messages = chatMemory[activeTab] || [];
-  messages.forEach(msg => {
-    const div = document.createElement('div');
-    div.className = 'chat-message ' + msg.role;
-    if(msg.content.startsWith('<img')) {
-      div.innerHTML = msg.content;
-    } else {
-      div.innerHTML = `<pre>${msg.content}</pre>`;
-    }
-    div.onclick = () => copyToClipboard(msg.content.replace(/<[^>]+>/g,''));
-    chatEl.appendChild(div);
-  });
-  chatEl.scrollTop = chatEl.scrollHeight;
-}
-
-function copyToClipboard(text) {
-  navigator.clipboard.writeText(text);
-  alert('Copied message!');
-}
-
-async function sendMessage() {
-  const content = inputEl.value.trim();
-  if(!content) return;
-  addMessage('user', content);
-  inputEl.value = '';
-
-  // --- Check for image commands ---
-  const imageTrigger = content.match(/^\/image\s+(.+)/i);
-  const triggerWords = ["draw","illustrate","show me","visualize","paint"];
-  let isImage = false;
-  let prompt = '';
-
-  if(imageTrigger) { 
-    isImage = true; 
-    prompt = imageTrigger[1]; 
-  } else if(triggerWords.some(w => content.toLowerCase().includes(w))) {
-    isImage = true; 
-    prompt = content;
-  }
-
-  if(isImage) {
-    const resp = await fetch('/api/image', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ prompt })
-    });
-    const blob = await resp.blob();
-    const url = URL.createObjectURL(blob);
-    addMessage('assistant', `<img src="${url}" style="max-width:100%;">`);
-  } else {
-    const resp = await fetch('/api/chat', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ messages: chatMemory[activeTab] })
-    });
-    const data = await resp.json();
-    if(data.success && data.messages)
-      data.messages.slice(chatMemory[activeTab].length).forEach(msg => addMessage(msg.role, msg.content));
-    else addMessage('assistant','Error: '+(data.error||'Unknown'));
-  }
-}
-
-function addMessage(role, content) {
-  chatMemory[activeTab].push({ role, content, timestamp: new Date().toISOString() });
-  localStorage.setItem('chatMemory', JSON.stringify(chatMemory));
-  renderChat();
-}
-
-sendBtn.onclick = sendMessage;
-inputEl.addEventListener('keydown', e => { if(e.key==='Enter') sendMessage(); });
-newTabBtn.onclick = () => createNewTab();
-
-renderTabs();
-renderChat();
+// === Initialize default tab ===
+switchTab(currentTab);
