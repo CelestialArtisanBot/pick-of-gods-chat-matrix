@@ -2,46 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pick of Gods AI Chat</title>
+  <title>Pick of Gods Chat Matrix</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Pick of Gods AI Chat</h1>
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="chat">Chat</button>
-        <button class="tab-btn" data-tab="images">Images</button>
-        <button class="tab-btn" data-tab="video">Video</button>
-        <button class="tab-btn" data-tab="3d">3D</button>
-      </div>
-    </header>
-
-    <main>
-      <div class="tab-content active" id="chatTab">
-        <div id="chatMessages" class="messages"></div>
-        <form id="chatForm">
-          <input type="text" id="chatInput" placeholder="Enter your message..." autocomplete="off"/>
-          <button type="submit" id="sendBtn">Send</button>
-          <button type="button" id="imgToggleBtn">Generate Image</button>
-        </form>
-      </div>
-
-      <div class="tab-content" id="imagesTab">
-        <p>Images output will appear here.</p>
-      </div>
-
-      <div class="tab-content" id="videoTab">
-        <p>Video output will appear here.</p>
-      </div>
-
-      <div class="tab-content" id="3dTab">
-        <p>3D output will appear here.</p>
-      </div>
-    </main>
+  <div id="chatContainer">
+    <div id="chatMessages"></div>
+    <form id="chatForm">
+      <input type="text" id="chatInput" placeholder="Type your message..." />
+      <button type="submit" id="sendBtn">Send</button>
+      <button type="button" id="imgToggleBtn">Generate Image</button>
+    </form>
   </div>
-
   <script src="chat.js"></script>
 </body>
 </html>
