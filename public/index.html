@@ -7,40 +7,39 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="chat-container">
+  <div class="container">
+    <header>
+      <h1>Pick of Gods AI Chat</h1>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="chat">Chat</button>
+        <button class="tab-btn" data-tab="images">Images</button>
+        <button class="tab-btn" data-tab="video">Video</button>
+        <button class="tab-btn" data-tab="3d">3D</button>
+      </div>
+    </header>
 
-    <!-- ===== Tabs ===== -->
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="text">Text</button>
-      <button class="tab-btn" data-tab="image">Image</button>
-      <button class="tab-btn" data-tab="video">Video</button>
-      <button class="tab-btn" data-tab="3d">3D</button>
-    </div>
+    <main>
+      <div class="tab-content active" id="chatTab">
+        <div id="chatMessages" class="messages"></div>
+        <form id="chatForm">
+          <input type="text" id="chatInput" placeholder="Enter your message..." autocomplete="off"/>
+          <button type="submit" id="sendBtn">Send</button>
+          <button type="button" id="imgToggleBtn">Generate Image</button>
+        </form>
+      </div>
 
-    <!-- ===== API Key Inputs ===== -->
-    <div class="tab-content active" id="textTab">
-      <input type="text" class="api-key" placeholder="Insert Text API Key">
-    </div>
-    <div class="tab-content" id="imageTab">
-      <input type="text" class="api-key" placeholder="Insert Image API Key">
-    </div>
-    <div class="tab-content" id="videoTab">
-      <input type="text" class="api-key" placeholder="Insert Video API Key">
-    </div>
-    <div class="tab-content" id="3dTab">
-      <input type="text" class="api-key" placeholder="Insert 3D API Key">
-    </div>
+      <div class="tab-content" id="imagesTab">
+        <p>Images output will appear here.</p>
+      </div>
 
-    <!-- ===== Chat Messages ===== -->
-    <div id="chatMessages" class="chat-messages"></div>
+      <div class="tab-content" id="videoTab">
+        <p>Video output will appear here.</p>
+      </div>
 
-    <!-- ===== Input Form ===== -->
-    <form id="chatForm" class="chat-form">
-      <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off">
-      <button type="button" id="imgToggleBtn">Generate Image</button>
-      <button type="submit" id="sendBtn">Send</button>
-    </form>
-
+      <div class="tab-content" id="3dTab">
+        <p>3D output will appear here.</p>
+      </div>
+    </main>
   </div>
 
   <script src="chat.js"></script>
