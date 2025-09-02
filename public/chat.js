@@ -1,135 +1,64 @@
-// Frontend DOM
-const tabs = document.querySelectorAll(".tab-btn");
-const tabContents = document.querySelectorAll(".tab-content");
+import type { RequestHandler } from "@cloudflare/workers-types";
 
-// ================== Tabs ==================
-tabs.forEach(btn => {
-  btn.addEventListener("click", () => {
-    tabs.forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    tabContents.forEach(tc => tc.classList.remove("active"));
-    document.querySelector(`#${btn.dataset.tab}Tab`).classList.add("active");
+// Example helper function for AI calls
+async function callAI(apiKey: string, messages: any[], type: string): Promise<any> {
+  let url = "https://api.openai.com/v1/chat/completions";
+  let payload: any = {
+    model: "gpt-5-mini",
+    messages
+  };
+
+  // Add generation type for image/video/3D
+  if(type === "image") payload.size = "1024x1024";
+  if(type === "video") payload.video = true;      // hypothetical
+  if(type === "3d") payload.render3D = true;      // hypothetical
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
   });
-});
 
-// ================== Messages ==================
-function appendMessage(container, role, content, type="text") {
-  const el = document.createElement("div");
-  el.className = `message ${role}`;
-  
-  if(type === "text") el.textContent = content;
-  else if(type === "image"){
-    const img = document.createElement("img");
-    img.src = content;
-    img.alt = "Generated image";
-    el.appendChild(img);
-  }
-  else if(type === "video"){
-    const video = document.createElement("video");
-    video.src = content;
-    video.controls = true;
-    el.appendChild(video);
-  }
-  else if(type === "3d"){
-    const iframe = document.createElement("iframe");
-    iframe.src = content;
-    iframe.width = "300";
-    iframe.height = "300";
-    iframe.allow = "fullscreen";
-    el.appendChild(iframe);
-  }
-
-  container.appendChild(el);
-  container.scrollTop = container.scrollHeight;
+  const data = await res.json();
+  return data;
 }
 
-// ================== Chat Functions ==================
-async function sendChat(type, userText){
-  let container, apiInput, input;
-
-  switch(type){
-    case "text":
-      container = document.querySelector("#chatMessages");
-      apiInput = document.querySelector("#textApiKey");
-      input = document.querySelector("#chatInput");
-      break;
-    case "image":
-      container = document.querySelector("#imageMessages");
-      apiInput = document.querySelector("#imageApiKey");
-      input = document.querySelector("#chatInputImage");
-      break;
-    case "video":
-      container = document.querySelector("#videoMessages");
-      apiInput = document.querySelector("#videoApiKey");
-      input = document.querySelector("#chatInputVideo");
-      break;
-    case "3d":
-      container = document.querySelector("#3dMessages");
-      apiInput = document.querySelector("#3dApiKey");
-      input = document.querySelector("#chatInput3D");
-      break;
-  }
-
-  const apiKey = apiInput.value.trim();
-  if(!apiKey) return appendMessage(container,"ai","Please enter the API key for this section.");
-
-  // Save key to localStorage
-  localStorage.setItem(`${type}ApiKey`, apiKey);
-
-  appendMessage(container,"user",userText);
-
-  const body = { messages:[{ role:"user", content:userText }], type, apiKey };
-
+// ================== Chat Route Handler ==================
+export const POST: RequestHandler = async (req) => {
   try {
-    const res = await fetch("/api/chat", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify(body)
-    });
-    const data = await res.json();
+    const { messages, apiKey, type } = await req.json();
 
-    if(data?.messages) data.messages.forEach(m=>{
-      let outputType = "text";
-      if(type==="image") outputType = "image";
-      if(type==="video") outputType = "video";
-      if(type==="3d") outputType = "3d";
-      appendMessage(container, m.role, m.content, outputType);
+    if(!apiKey) return new Response(JSON.stringify({ error: "API key required." }), { status: 400 });
+
+    const aiResponse = await callAI(apiKey, messages, type);
+
+    // Format response for frontend
+    const responseMessages = [];
+
+    if(type === "text") {
+      // standard AI text
+      responseMessages.push({ role: "ai", content: aiResponse.choices?.[0]?.message?.content || "No response" });
+    } else if(type === "image") {
+      // return image URL(s)
+      const url = aiResponse.data?.[0]?.url || "";
+      responseMessages.push({ role: "ai", content: url });
+    } else if(type === "video") {
+      const url = aiResponse.data?.[0]?.url || "";
+      responseMessages.push({ role: "ai", content: url });
+    } else if(type === "3d") {
+      const url = aiResponse.data?.[0]?.url || "";
+      responseMessages.push({ role: "ai", content: url });
+    }
+
+    return new Response(JSON.stringify({ messages: responseMessages }), {
+      headers: { "Content-Type": "application/json" }
     });
-    else appendMessage(container,"ai","No response from AI.");
-  } catch(err){
-    appendMessage(container,"ai","Error sending chat.");
+
+  } catch(err) {
     console.error(err);
+    return new Response(JSON.stringify({ error: "Failed to process chat." }), { status: 500 });
   }
-
-  input.value = "";
-}
-
-// ================== Event Listeners ==================
-document.querySelector("#chatForm").addEventListener("submit", e=>{
-  e.preventDefault();
-  const txt = document.querySelector("#chatInput").value.trim();
-  if(txt) sendChat("text", txt);
-});
-
-document.querySelector("#sendImageBtn").addEventListener("click", ()=>{
-  const txt = document.querySelector("#chatInputImage").value.trim();
-  if(txt) sendChat("image", txt);
-});
-
-document.querySelector("#sendVideoBtn").addEventListener("click", ()=>{
-  const txt = document.querySelector("#chatInputVideo").value.trim();
-  if(txt) sendChat("video", txt);
-});
-
-document.querySelector("#send3DBtn").addEventListener("click", ()=>{
-  const txt = document.querySelector("#chatInput3D").value.trim();
-  if(txt) sendChat("3d", txt);
-});
-
-// ================== Load API Keys from localStorage ==================
-["text","image","video","3d"].forEach(type=>{
-  const savedKey = localStorage.getItem(`${type}ApiKey`);
-  if(savedKey){
-    document.querySelector(`#${type}ApiKey`).value = savedKey;
-  }
-});
+};
