@@ -1,26 +1,17 @@
-/// <reference types="@cloudflare/workers-types" />
-
-import { Env, ChatRequestBody, ChatResponseBody } from "./types";
-
-async function router(req: Request, env: Env): Promise<Response> {
-  const url = new URL(req.url);
-
-  if (url.pathname === "/api/chat" && req.method === "POST") {
-    const body: ChatRequestBody = await req.json();
-
-    const aiResp: ChatResponseBody = body.generateImage
-      ? { messages: [{ role: "ai", content: "Image AI placeholder" }] }
-      : { messages: [{ role: "ai", content: "Text AI placeholder" }] };
-
-    return new Response(JSON.stringify(aiResp), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  return new Response("Not Found", { status: 404 });
-}
+import { Env } from "./types";
+import { handleAuth } from "./routes/auth";
+import { handleChat } from "./routes/chat";
+import { handleDeploy } from "./routes/deploy";
 
 addEventListener("fetch", (event: FetchEvent) => {
-  event.respondWith(router(event.request, {} as Env));
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith("/api/auth")) {
+    event.respondWith(handleAuth(event.request, event as unknown as Env));
+  } else if (url.pathname.startsWith("/api/chat")) {
+    event.respondWith(handleChat(event.request, event as unknown as Env));
+  } else if (url.pathname.startsWith("/api/deploy")) {
+    event.respondWith(handleDeploy(event.request, event as unknown as Env));
+  } else {
+    event.respondWith(new Response("Pick of Gods Chat Matrix Worker"));
+  }
 });
