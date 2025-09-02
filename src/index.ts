@@ -7,20 +7,20 @@ async function router(req: Request, env: Env): Promise<Response> {
 
   if (url.pathname === "/api/chat" && req.method === "POST") {
     const body: ChatRequestBody = await req.json();
+
     const aiResp: ChatResponseBody = body.generateImage
-      ? { messages: [{ role: "ai", content: "Image AI response placeholder" }] }
-      : { messages: [{ role: "ai", content: "Text AI response placeholder" }] };
+      ? { messages: [{ role: "ai", content: "Image AI placeholder" }] }
+      : { messages: [{ role: "ai", content: "Text AI placeholder" }] };
 
     return new Response(JSON.stringify(aiResp), {
       status: 200,
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
     });
   }
 
   return new Response("Not Found", { status: 404 });
 }
 
-// Cloudflare Workers fetch listener
 addEventListener("fetch", (event: FetchEvent) => {
   event.respondWith(router(event.request, {} as Env));
 });
