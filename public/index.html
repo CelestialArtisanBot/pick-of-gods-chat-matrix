@@ -2,32 +2,31 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pick of Gods Chat Matrix</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="chatContainer">
-    <!-- Chat messages -->
-    <div id="chatMessages"></div>
+  <main id="chatContainer">
+    <!-- Chat Messages -->
+    <section id="chatMessages" aria-live="polite"></section>
 
-    <!-- Chat form -->
-    <form id="chatForm">
+    <!-- Chat Input -->
+    <form id="chatForm" autocomplete="off">
       <input 
         type="text" 
         id="chatInput" 
         placeholder="Type your message..." 
-        autocomplete="off" 
+        aria-label="Type your message"
         required 
       />
-      <div class="buttonRow">
+      <div class="button-group">
         <button type="submit" id="sendBtn">Send</button>
-        <button type="button" id="imgToggleBtn">🎨 Generate Image</button>
-        <button type="button" id="refreshBtn">🔄 Refresh</button>
+        <button type="button" id="imgToggleBtn">Generate Image</button>
       </div>
     </form>
-  </div>
+  </main>
 
-  <!-- Attach chat logic -->
   <script src="chat.js"></script>
 </body>
 </html>
