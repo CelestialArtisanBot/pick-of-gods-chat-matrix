@@ -1,30 +1,26 @@
-// src/index.ts
+/// <reference types="@cloudflare/workers-types" />
+
 import { Env, ChatRequestBody, ChatResponseBody } from "./types";
 
-// Router placeholder (expand with routes later)
-async function router(req: Request): Promise<Response> {
+async function router(req: Request, env: Env): Promise<Response> {
   const url = new URL(req.url);
 
-  // Chat route
   if (url.pathname === "/api/chat" && req.method === "POST") {
-    try {
-      const body: ChatRequestBody = await req.json();
-      // Placeholder AI response logic
-      const aiResp: ChatResponseBody = { messages: [{ role: "ai", content: "Hello from Cloudflare AI!" }] };
+    const body: ChatRequestBody = await req.json();
+    const aiResp: ChatResponseBody = body.generateImage
+      ? { messages: [{ role: "ai", content: "Image AI response placeholder" }] }
+      : { messages: [{ role: "ai", content: "Text AI response placeholder" }] };
 
-      return new Response(JSON.stringify(aiResp), {
-        status: 200,
-        headers: { "Content-Type": "application/json" }
-      });
-    } catch (err) {
-      return new Response(JSON.stringify({ error: "Invalid request body" }), { status: 400 });
-    }
+    return new Response(JSON.stringify(aiResp), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 
   return new Response("Not Found", { status: 404 });
 }
 
-// Main event listener
+// Cloudflare Workers fetch listener
 addEventListener("fetch", (event: FetchEvent) => {
-  event.respondWith(router(event.request));
+  event.respondWith(router(event.request, {} as Env));
 });
