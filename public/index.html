@@ -3,38 +3,48 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pick of Gods AI Hub</title>
+<title>Pick of Gods AI Chat</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="tabs">
-  <button class="tab-btn" data-tab="chat">AI Chat</button>
-  <button class="tab-btn" data-tab="image">Text-to-Image</button>
-  <button class="tab-btn" data-tab="globe">Globe</button>
-  <button class="tab-btn" data-tab="d1">D1 Explorer</button>
-</div>
+  <div class="chat-container">
 
-<div id="chatTab" class="tab-content active">
-  <div id="chatMessages" class="chat-messages"></div>
-  <form id="chatForm">
-    <input id="chatInput" type="text" placeholder="Type your message..." />
-    <button id="sendBtn">Send</button>
-    <button id="imgToggleBtn" type="button">Generate Image</button>
-  </form>
-</div>
+    <!-- Tab Buttons -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="text">Text</button>
+      <button class="tab-btn" data-tab="image">Image</button>
+      <button class="tab-btn" data-tab="video">Video</button>
+      <button class="tab-btn" data-tab="3d">3D</button>
+    </div>
 
-<div id="imageTab" class="tab-content">
-  <iframe src="https://text-to-image-template.celestialartisanbot.workers.dev/" frameborder="0"></iframe>
-</div>
+    <!-- Tab Contents -->
+    <div class="tab-contents">
+      <div id="textTab" class="tab-content active">
+        <input type="text" id="textApiKey" class="api-key" placeholder="Insert Text API Key">
+      </div>
+      <div id="imageTab" class="tab-content">
+        <input type="text" id="imageApiKey" class="api-key" placeholder="Insert Image API Key">
+      </div>
+      <div id="videoTab" class="tab-content">
+        <input type="text" id="videoApiKey" class="api-key" placeholder="Insert Video API Key">
+      </div>
+      <div id="3dTab" class="tab-content">
+        <input type="text" id="3dApiKey" class="api-key" placeholder="Insert 3D API Key">
+      </div>
+    </div>
 
-<div id="globeTab" class="tab-content">
-  <iframe src="https://multiplayer-globe-template.celestialartisanbot.workers.dev/" frameborder="0"></iframe>
-</div>
+    <!-- Chat Messages -->
+    <div id="chatMessages" class="chat-messages"></div>
 
-<div id="d1Tab" class="tab-content">
-  <iframe src="https://d1-template.celestialartisanbot.workers.dev/" frameborder="0"></iframe>
-</div>
+    <!-- Chat Input -->
+    <form id="chatForm" class="chat-form">
+      <input type="text" id="chatInput" placeholder="Type your message..." autocomplete="off">
+      <button type="button" id="imgToggleBtn">Generate Image</button>
+      <button type="submit" id="sendBtn">Send</button>
+    </form>
 
-<script src="chat.js"></script>
+  </div>
+
+  <script src="chat.js"></script>
 </body>
 </html>
