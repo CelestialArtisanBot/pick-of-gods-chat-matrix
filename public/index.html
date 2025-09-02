@@ -7,26 +7,27 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main id="chatContainer">
-    <!-- Chat Messages -->
-    <section id="chatMessages" aria-live="polite"></section>
-
-    <!-- Chat Input -->
+  <main id="chatContainer" role="main" aria-label="Chat Application">
+    <!-- Chat message area -->
+    <section id="chatMessages" aria-live="polite" aria-atomic="false"></section>
+    
+    <!-- Chat input form -->
     <form id="chatForm" autocomplete="off">
+      <label for="chatInput" class="visually-hidden">Enter your message</label>
       <input 
         type="text" 
         id="chatInput" 
         placeholder="Type your message..." 
-        aria-label="Type your message"
         required 
+        aria-label="Chat message input"
       />
-      <div class="button-group">
+      <div class="btn-group">
         <button type="submit" id="sendBtn">Send</button>
-        <button type="button" id="imgToggleBtn">Generate Image</button>
+        <button type="button" id="imgToggleBtn">🎨 Generate Image</button>
       </div>
     </form>
   </main>
 
-  <script src="chat.js"></script>
+  <script src="chat.js" defer></script>
 </body>
 </html>
