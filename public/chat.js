@@ -1,4 +1,4 @@
-// Frontend DOM
+// ================== Frontend DOM ==================
 const chatForm = document.querySelector("#chatForm");
 const chatInput = document.querySelector("#chatInput");
 const chatMessages = document.querySelector("#chatMessages");
@@ -20,10 +20,31 @@ tabs.forEach(btn => {
 });
 
 // ================== Messages ==================
-function appendMessage(role, text) {
+function appendMessage(role, content, type="text") {
   const el = document.createElement("div");
   el.className = `message ${role}`;
-  el.textContent = text;
+
+  if(type === "image") {
+    const img = document.createElement("img");
+    img.src = content;
+    img.alt = "Generated Image";
+    el.appendChild(img);
+  } else if(type === "video") {
+    const vid = document.createElement("video");
+    vid.src = content;
+    vid.controls = true;
+    el.appendChild(vid);
+  } else if(type === "3d") {
+    const iframe = document.createElement("iframe");
+    iframe.src = content;
+    iframe.width = "300";
+    iframe.height = "200";
+    iframe.style.border = "none";
+    el.appendChild(iframe);
+  } else {
+    el.textContent = content;
+  }
+
   chatMessages.appendChild(el);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
@@ -47,7 +68,7 @@ async function signalApp(url, payload) {
   } catch(err){ console.error(err); }
 }
 
-function notifyApps(payload){ APPS.forEach(url=>signalApp(url,payload)); }
+function notifyApps(payload){ APPS.forEach(url => signalApp(url,payload)); }
 
 // ================== Chat ==================
 async function sendChat(userText){
@@ -63,15 +84,21 @@ async function sendChat(userText){
       body: JSON.stringify(body)
     });
     const data = await res.json();
-    if(data?.messages) data.messages.forEach(m=>appendMessage(m.role,m.content));
-    else appendMessage("ai","No response from AI.");
+    if(data?.messages) {
+      data.messages.forEach(m => appendMessage(m.role, m.content, m.type || "text"));
+    } else {
+      appendMessage("ai","No response from AI.");
+    }
 
     notifyApps({ action:"chatUpdate", message:userText });
-  } catch(err){ appendMessage("ai","Error sending chat."); console.error(err); }
+  } catch(err){ 
+    appendMessage("ai","Error sending chat."); 
+    console.error(err); 
+  }
 }
 
 // ================== Event Listeners ==================
-chatForm.addEventListener("submit", e=>{
+chatForm.addEventListener("submit", e => {
   e.preventDefault();
   const txt = chatInput.value.trim();
   if(!txt) return;
