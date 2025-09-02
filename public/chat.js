@@ -1,4 +1,4 @@
-// Frontend DOM
+// ===== DOM Elements =====
 const chatForm = document.querySelector("#chatForm");
 const chatInput = document.querySelector("#chatInput");
 const chatMessages = document.querySelector("#chatMessages");
@@ -6,53 +6,55 @@ const sendBtn = document.querySelector("#sendBtn");
 const imgToggleBtn = document.querySelector("#imgToggleBtn");
 const tabs = document.querySelectorAll(".tab-btn");
 const tabContents = document.querySelectorAll(".tab-content");
-const apiKeyInputs = document.querySelectorAll(".api-key");
+const apiInputs = document.querySelectorAll(".api-key");
 
 let imgToggle = false;
-let currentType = "text";
+let activeTab = 0; // index of current tab
 
-// ================== Tabs ==================
-tabs.forEach(btn => {
+// ===== Tabs Handling =====
+tabs.forEach((btn, index) => {
   btn.addEventListener("click", () => {
     tabs.forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
+
     tabContents.forEach(tc => tc.classList.remove("active"));
     document.querySelector(`#${btn.dataset.tab}Tab`).classList.add("active");
-    currentType = btn.dataset.tab; // text, image, video, 3d
+
+    activeTab = index; // save active tab index
   });
 });
 
-// ================== Messages ==================
-function appendMessage(role, content, type="text") {
+// ===== Messages =====
+function appendMessage(role, text, media=null) {
   const el = document.createElement("div");
   el.className = `message ${role}`;
+  el.textContent = text;
 
-  if(type === "text") {
-    el.textContent = content;
-  } else if(type === "image") {
-    const img = document.createElement("img");
-    img.src = content;
-    img.style.maxWidth = "200px";
-    el.appendChild(img);
-  } else if(type === "video") {
-    const vid = document.createElement("video");
-    vid.src = content;
-    vid.controls = true;
-    vid.style.maxWidth = "300px";
-    el.appendChild(vid);
-  } else if(type === "3d") {
-    const iframe = document.createElement("iframe");
-    iframe.src = content;
-    iframe.width = "300";
-    iframe.height = "300";
-    el.appendChild(iframe);
+  if(media){
+    if(media.type === "image"){
+      const img = document.createElement("img");
+      img.src = media.url;
+      el.appendChild(img);
+    } else if(media.type === "video"){
+      const vid = document.createElement("video");
+      vid.src = media.url;
+      vid.controls = true;
+      el.appendChild(vid);
+    } else if(media.type === "3d"){
+      // simple 3D preview canvas placeholder
+      const canvas = document.createElement("canvas");
+      canvas.width = 300;
+      canvas.height = 200;
+      el.appendChild(canvas);
+      // Could integrate Three.js or Babylon.js here
+    }
   }
 
   chatMessages.appendChild(el);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// ================== Signal Apps ==================
+// ===== Signal Apps =====
 const APPS = [
   "https://r2-explorer-template.celestialartisanbot.workers.dev",
   "https://d1-template.celestialartisanbot.workers.dev",
@@ -60,7 +62,7 @@ const APPS = [
   "https://openauth-template.celestialartisanbot.workers.dev"
 ];
 
-async function signalApp(url, payload) {
+async function signalApp(url, payload){
   try {
     const res = await fetch(url + "/api/signal", {
       method:"POST",
@@ -73,15 +75,18 @@ async function signalApp(url, payload) {
 
 function notifyApps(payload){ APPS.forEach(url=>signalApp(url,payload)); }
 
-// ================== Chat ==================
+// ===== Chat Sending =====
 async function sendChat(userText){
-  appendMessage("user", userText, "text");
+  appendMessage("user", userText);
 
-  const activeApiKeyInput = document.querySelector(`#${currentType}ApiKey`);
-  const apiKey = activeApiKeyInput?.value?.trim();
-  if(!apiKey) return appendMessage("ai", "Insert API Key for this tab.", "text");
+  // get API key from active tab
+  const apiKey = apiInputs[activeTab]?.value?.trim() || "";
 
-  let body = { messages:[{ role:"user", content:userText }], apiKey, type: currentType };
+  let body = {
+    messages:[{ role:"user", content:userText }],
+    apiKey: apiKey,
+    generateImage: imgToggle
+  };
 
   try {
     const res = await fetch("/api/chat", {
@@ -91,14 +96,19 @@ async function sendChat(userText){
     });
     const data = await res.json();
 
-    if(data?.messages) data.messages.forEach(m=>appendMessage(m.role, m.content, currentType));
-    else appendMessage("ai","No response from AI.", "text");
+    if(data?.messages){
+      data.messages.forEach(m => {
+        // check if media returned
+        if(m.media) appendMessage(m.role, m.content, m.media);
+        else appendMessage(m.role, m.content);
+      });
+    } else appendMessage("ai","No response from AI.");
 
     notifyApps({ action:"chatUpdate", message:userText });
-  } catch(err){ appendMessage("ai","Error sending chat.", "text"); console.error(err); }
+  } catch(err){ appendMessage("ai","Error sending chat."); console.error(err); }
 }
 
-// ================== Event Listeners ==================
+// ===== Event Listeners =====
 chatForm.addEventListener("submit", e=>{
   e.preventDefault();
   const txt = chatInput.value.trim();
