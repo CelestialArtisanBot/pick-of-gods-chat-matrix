@@ -1,5 +1,3 @@
-// chat.js
-
 const chatForm = document.getElementById("chatForm");
 const chatInput = document.getElementById("chatInput");
 const chatMessages = document.getElementById("chatMessages");
@@ -10,60 +8,53 @@ let generateImage = false;
 // Toggle image generation
 imgToggleBtn.addEventListener("click", () => {
   generateImage = !generateImage;
-  imgToggleBtn.style.backgroundColor = generateImage ? "#0d6efd" : "#6c757d";
+  imgToggleBtn.textContent = generateImage ? "Image: ON" : "Image: OFF";
 });
 
-// Add message to chat
-function appendMessage(role, content, isImage = false) {
+// Append messages to chat
+function appendMessage(role, content) {
   const msgDiv = document.createElement("div");
-  msgDiv.classList.add("message", role);
-
-  if (isImage) {
+  msgDiv.className = `message ${role}`;
+  if (role === "ai" && generateImage && content.imageUrl) {
     const img = document.createElement("img");
-    img.src = content;
+    img.src = content.imageUrl;
     img.alt = "Generated Image";
-    img.style.maxWidth = "100%";
-    img.style.borderRadius = "12px";
+    img.className = "ai-image";
     msgDiv.appendChild(img);
+    if (content.text) {
+      const text = document.createElement("p");
+      text.textContent = content.text;
+      msgDiv.appendChild(text);
+    }
   } else {
-    msgDiv.textContent = content;
+    msgDiv.textContent = content.text || content;
   }
-
   chatMessages.appendChild(msgDiv);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// Handle form submit
+// Send message
 chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const message = chatInput.value.trim();
-  if (!message) return;
+  const userMessage = chatInput.value.trim();
+  if (!userMessage) return;
 
-  appendMessage("user", message);
+  appendMessage("user", userMessage);
   chatInput.value = "";
-  chatInput.disabled = true;
 
   try {
-    const response = await fetch("/api/chat", {
+    const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: [{ role: "user", content: message }], generateImage }),
+      body: JSON.stringify({ 
+        messages: [{ role: "user", content: userMessage }], 
+        generateImage 
+      }),
     });
-
-    const data = await response.json();
-    const aiMsg = data.messages?.[0]?.content;
-
-    // Check if AI returned an image URL
-    if (generateImage && aiMsg?.startsWith("http")) {
-      appendMessage("ai", aiMsg, true);
-    } else {
-      appendMessage("ai", aiMsg || "No response from AI.");
-    }
+    const data = await res.json();
+    appendMessage("ai", data.messages[0].content);
   } catch (err) {
     console.error(err);
-    appendMessage("ai", "Error: Failed to get response.");
-  } finally {
-    chatInput.disabled = false;
-    chatInput.focus();
+    appendMessage("ai", "Error generating response");
   }
 });
