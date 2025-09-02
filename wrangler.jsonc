@@ -1,21 +1,39 @@
 {
+  // Wrangler configuration for Pick of Gods Chat Matrix
   "name": "pick-of-gods-chat-matrix",
   "main": "src/index.ts",
-  "compatibility_date": "2025-08-30",
-  "site": {
-    "bucket": "./public",
-    "entry-point": "src"
-  },
-  "vars": {},
-  "build": {
-    "upload": {
-      "format": "modules"
+  "compatibility_date": "2025-09-02",
+  "compatibility_flags": [],
+  "env": {
+    "development": {
+      "bindings": {
+        "AI": { "type": "wasm", "name": "AI" },             // Cloudflare AI binding
+        "OPENROUTER_KEY": { "type": "secret" },             // Secret AI model key
+        "AUTH_STORAGE": { "type": "kv_namespace", "name": "AUTH_STORAGE" },
+        "DISPATCHER": { "type": "service", "name": "DISPATCHER" },
+        "CLOUDFLARE_API_TOKEN": { "type": "secret" },
+        "CLOUDFLARE_ACCOUNT_ID": { "type": "plain_text" },
+        "READONLY": { "type": "kv_namespace", "name": "READONLY" }
+      }
+    },
+    "production": {
+      "bindings": {
+        "AI": { "type": "wasm", "name": "AI" },
+        "OPENROUTER_KEY": { "type": "secret" },
+        "AUTH_STORAGE": { "type": "kv_namespace", "name": "AUTH_STORAGE" },
+        "DISPATCHER": { "type": "service", "name": "DISPATCHER" },
+        "CLOUDFLARE_API_TOKEN": { "type": "secret" },
+        "CLOUDFLARE_ACCOUNT_ID": { "type": "plain_text" },
+        "READONLY": { "type": "kv_namespace", "name": "READONLY" }
+      }
     }
   },
-  "ai": {
-    "binding": "AI"
+  "build": {
+    "command": "npm run build",
+    "cwd": ".",
+    "watch_dirs": ["src"]
   },
-  "observability": {
-    "enabled": true
-  }
+  "routes": [
+    { "pattern": "/*", "script": "pick-of-gods-chat-matrix" }
+  ]
 }
