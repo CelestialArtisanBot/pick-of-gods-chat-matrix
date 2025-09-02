@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pick of Gods AI Chat</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pick of Gods AI Chat</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="chat-container">
 
-    <!-- Tab Buttons -->
+    <!-- ===== Tabs ===== -->
     <div class="tabs">
       <button class="tab-btn active" data-tab="text">Text</button>
       <button class="tab-btn" data-tab="image">Image</button>
@@ -17,28 +17,26 @@
       <button class="tab-btn" data-tab="3d">3D</button>
     </div>
 
-    <!-- Tab Contents -->
-    <div class="tab-contents">
-      <div id="textTab" class="tab-content active">
-        <input type="text" id="textApiKey" class="api-key" placeholder="Insert Text API Key">
-      </div>
-      <div id="imageTab" class="tab-content">
-        <input type="text" id="imageApiKey" class="api-key" placeholder="Insert Image API Key">
-      </div>
-      <div id="videoTab" class="tab-content">
-        <input type="text" id="videoApiKey" class="api-key" placeholder="Insert Video API Key">
-      </div>
-      <div id="3dTab" class="tab-content">
-        <input type="text" id="3dApiKey" class="api-key" placeholder="Insert 3D API Key">
-      </div>
+    <!-- ===== API Key Inputs ===== -->
+    <div class="tab-content active" id="textTab">
+      <input type="text" class="api-key" placeholder="Insert Text API Key">
+    </div>
+    <div class="tab-content" id="imageTab">
+      <input type="text" class="api-key" placeholder="Insert Image API Key">
+    </div>
+    <div class="tab-content" id="videoTab">
+      <input type="text" class="api-key" placeholder="Insert Video API Key">
+    </div>
+    <div class="tab-content" id="3dTab">
+      <input type="text" class="api-key" placeholder="Insert 3D API Key">
     </div>
 
-    <!-- Chat Messages -->
+    <!-- ===== Chat Messages ===== -->
     <div id="chatMessages" class="chat-messages"></div>
 
-    <!-- Chat Input -->
+    <!-- ===== Input Form ===== -->
     <form id="chatForm" class="chat-form">
-      <input type="text" id="chatInput" placeholder="Type your message..." autocomplete="off">
+      <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off">
       <button type="button" id="imgToggleBtn">Generate Image</button>
       <button type="submit" id="sendBtn">Send</button>
     </form>
