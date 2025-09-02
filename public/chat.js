@@ -1,64 +1,120 @@
-import type { RequestHandler } from "@cloudflare/workers-types";
+// Frontend DOM
+const chatForm = document.querySelector("#chatForm");
+const chatInput = document.querySelector("#chatInput");
+const chatMessages = document.querySelector("#chatMessages");
+const sendBtn = document.querySelector("#sendBtn");
+const imgToggleBtn = document.querySelector("#imgToggleBtn");
+const tabs = document.querySelectorAll(".tab-btn");
+const tabContents = document.querySelectorAll(".tab-content");
+const apiKeyInputs = document.querySelectorAll(".api-key");
 
-// Example helper function for AI calls
-async function callAI(apiKey: string, messages: any[], type: string): Promise<any> {
-  let url = "https://api.openai.com/v1/chat/completions";
-  let payload: any = {
-    model: "gpt-5-mini",
-    messages
-  };
+let imgToggle = false;
+let currentType = "text";
 
-  // Add generation type for image/video/3D
-  if(type === "image") payload.size = "1024x1024";
-  if(type === "video") payload.video = true;      // hypothetical
-  if(type === "3d") payload.render3D = true;      // hypothetical
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
+// ================== Tabs ==================
+tabs.forEach(btn => {
+  btn.addEventListener("click", () => {
+    tabs.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    tabContents.forEach(tc => tc.classList.remove("active"));
+    document.querySelector(`#${btn.dataset.tab}Tab`).classList.add("active");
+    currentType = btn.dataset.tab; // text, image, video, 3d
   });
+});
 
-  const data = await res.json();
-  return data;
+// ================== Messages ==================
+function appendMessage(role, content, type="text") {
+  const el = document.createElement("div");
+  el.className = `message ${role}`;
+
+  if(type === "text") {
+    el.textContent = content;
+  } else if(type === "image") {
+    const img = document.createElement("img");
+    img.src = content;
+    img.style.maxWidth = "200px";
+    el.appendChild(img);
+  } else if(type === "video") {
+    const vid = document.createElement("video");
+    vid.src = content;
+    vid.controls = true;
+    vid.style.maxWidth = "300px";
+    el.appendChild(vid);
+  } else if(type === "3d") {
+    const iframe = document.createElement("iframe");
+    iframe.src = content;
+    iframe.width = "300";
+    iframe.height = "300";
+    el.appendChild(iframe);
+  }
+
+  chatMessages.appendChild(el);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// ================== Chat Route Handler ==================
-export const POST: RequestHandler = async (req) => {
+// ================== Signal Apps ==================
+const APPS = [
+  "https://r2-explorer-template.celestialartisanbot.workers.dev",
+  "https://d1-template.celestialartisanbot.workers.dev",
+  "https://multiplayer-globe-template.celestialartisanbot.workers.dev",
+  "https://openauth-template.celestialartisanbot.workers.dev"
+];
+
+async function signalApp(url, payload) {
   try {
-    const { messages, apiKey, type } = await req.json();
-
-    if(!apiKey) return new Response(JSON.stringify({ error: "API key required." }), { status: 400 });
-
-    const aiResponse = await callAI(apiKey, messages, type);
-
-    // Format response for frontend
-    const responseMessages = [];
-
-    if(type === "text") {
-      // standard AI text
-      responseMessages.push({ role: "ai", content: aiResponse.choices?.[0]?.message?.content || "No response" });
-    } else if(type === "image") {
-      // return image URL(s)
-      const url = aiResponse.data?.[0]?.url || "";
-      responseMessages.push({ role: "ai", content: url });
-    } else if(type === "video") {
-      const url = aiResponse.data?.[0]?.url || "";
-      responseMessages.push({ role: "ai", content: url });
-    } else if(type === "3d") {
-      const url = aiResponse.data?.[0]?.url || "";
-      responseMessages.push({ role: "ai", content: url });
-    }
-
-    return new Response(JSON.stringify({ messages: responseMessages }), {
-      headers: { "Content-Type": "application/json" }
+    const res = await fetch(url + "/api/signal", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(payload)
     });
+    console.log(await res.json());
+  } catch(err){ console.error(err); }
+}
 
-  } catch(err) {
-    console.error(err);
-    return new Response(JSON.stringify({ error: "Failed to process chat." }), { status: 500 });
-  }
-};
+function notifyApps(payload){ APPS.forEach(url=>signalApp(url,payload)); }
+
+// ================== Chat ==================
+async function sendChat(userText){
+  appendMessage("user", userText, "text");
+
+  const activeApiKeyInput = document.querySelector(`#${currentType}ApiKey`);
+  const apiKey = activeApiKeyInput?.value?.trim();
+  if(!apiKey) return appendMessage("ai", "Insert API Key for this tab.", "text");
+
+  let body = { messages:[{ role:"user", content:userText }], apiKey, type: currentType };
+
+  try {
+    const res = await fetch("/api/chat", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+
+    if(data?.messages) data.messages.forEach(m=>appendMessage(m.role, m.content, currentType));
+    else appendMessage("ai","No response from AI.", "text");
+
+    notifyApps({ action:"chatUpdate", message:userText });
+  } catch(err){ appendMessage("ai","Error sending chat.", "text"); console.error(err); }
+}
+
+// ================== Event Listeners ==================
+chatForm.addEventListener("submit", e=>{
+  e.preventDefault();
+  const txt = chatInput.value.trim();
+  if(!txt) return;
+  chatInput.value="";
+  sendChat(txt);
+});
+
+sendBtn.addEventListener("click", ()=>{
+  const txt = chatInput.value.trim();
+  if(!txt) return;
+  chatInput.value="";
+  sendChat(txt);
+});
+
+imgToggleBtn.addEventListener("click", ()=>{
+  imgToggle = !imgToggle;
+  imgToggleBtn.textContent = imgToggle ? "Image ON" : "Generate Image";
+});
