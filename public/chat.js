@@ -1,13 +1,6 @@
-// ================== Frontend DOM ==================
-const chatForm = document.querySelector("#chatForm");
-const chatInput = document.querySelector("#chatInput");
-const chatMessages = document.querySelector("#chatMessages");
-const sendBtn = document.querySelector("#sendBtn");
-const imgToggleBtn = document.querySelector("#imgToggleBtn");
+// Frontend DOM
 const tabs = document.querySelectorAll(".tab-btn");
 const tabContents = document.querySelectorAll(".tab-content");
-
-let imgToggle = false;
 
 // ================== Tabs ==================
 tabs.forEach(btn => {
@@ -20,62 +13,72 @@ tabs.forEach(btn => {
 });
 
 // ================== Messages ==================
-function appendMessage(role, content, type="text") {
+function appendMessage(container, role, content, type="text") {
   const el = document.createElement("div");
   el.className = `message ${role}`;
-
-  if(type === "image") {
+  
+  if(type === "text") el.textContent = content;
+  else if(type === "image"){
     const img = document.createElement("img");
     img.src = content;
-    img.alt = "Generated Image";
+    img.alt = "Generated image";
     el.appendChild(img);
-  } else if(type === "video") {
-    const vid = document.createElement("video");
-    vid.src = content;
-    vid.controls = true;
-    el.appendChild(vid);
-  } else if(type === "3d") {
+  }
+  else if(type === "video"){
+    const video = document.createElement("video");
+    video.src = content;
+    video.controls = true;
+    el.appendChild(video);
+  }
+  else if(type === "3d"){
     const iframe = document.createElement("iframe");
     iframe.src = content;
     iframe.width = "300";
-    iframe.height = "200";
-    iframe.style.border = "none";
+    iframe.height = "300";
+    iframe.allow = "fullscreen";
     el.appendChild(iframe);
-  } else {
-    el.textContent = content;
   }
 
-  chatMessages.appendChild(el);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
 }
 
-// ================== Signal Apps ==================
-const APPS = [
-  "https://r2-explorer-template.celestialartisanbot.workers.dev",
-  "https://d1-template.celestialartisanbot.workers.dev",
-  "https://multiplayer-globe-template.celestialartisanbot.workers.dev",
-  "https://openauth-template.celestialartisanbot.workers.dev"
-];
+// ================== Chat Functions ==================
+async function sendChat(type, userText){
+  let container, apiInput, input;
 
-async function signalApp(url, payload) {
-  try {
-    const res = await fetch(url + "/api/signal", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify(payload)
-    });
-    console.log(await res.json());
-  } catch(err){ console.error(err); }
-}
+  switch(type){
+    case "text":
+      container = document.querySelector("#chatMessages");
+      apiInput = document.querySelector("#textApiKey");
+      input = document.querySelector("#chatInput");
+      break;
+    case "image":
+      container = document.querySelector("#imageMessages");
+      apiInput = document.querySelector("#imageApiKey");
+      input = document.querySelector("#chatInputImage");
+      break;
+    case "video":
+      container = document.querySelector("#videoMessages");
+      apiInput = document.querySelector("#videoApiKey");
+      input = document.querySelector("#chatInputVideo");
+      break;
+    case "3d":
+      container = document.querySelector("#3dMessages");
+      apiInput = document.querySelector("#3dApiKey");
+      input = document.querySelector("#chatInput3D");
+      break;
+  }
 
-function notifyApps(payload){ APPS.forEach(url => signalApp(url,payload)); }
+  const apiKey = apiInput.value.trim();
+  if(!apiKey) return appendMessage(container,"ai","Please enter the API key for this section.");
 
-// ================== Chat ==================
-async function sendChat(userText){
-  appendMessage("user", userText);
+  // Save key to localStorage
+  localStorage.setItem(`${type}ApiKey`, apiKey);
 
-  let body = { messages:[{ role:"user", content:userText }] };
-  if(imgToggle) body.generateImage = true;
+  appendMessage(container,"user",userText);
+
+  const body = { messages:[{ role:"user", content:userText }], type, apiKey };
 
   try {
     const res = await fetch("/api/chat", {
@@ -84,36 +87,49 @@ async function sendChat(userText){
       body: JSON.stringify(body)
     });
     const data = await res.json();
-    if(data?.messages) {
-      data.messages.forEach(m => appendMessage(m.role, m.content, m.type || "text"));
-    } else {
-      appendMessage("ai","No response from AI.");
-    }
 
-    notifyApps({ action:"chatUpdate", message:userText });
-  } catch(err){ 
-    appendMessage("ai","Error sending chat."); 
-    console.error(err); 
+    if(data?.messages) data.messages.forEach(m=>{
+      let outputType = "text";
+      if(type==="image") outputType = "image";
+      if(type==="video") outputType = "video";
+      if(type==="3d") outputType = "3d";
+      appendMessage(container, m.role, m.content, outputType);
+    });
+    else appendMessage(container,"ai","No response from AI.");
+  } catch(err){
+    appendMessage(container,"ai","Error sending chat.");
+    console.error(err);
   }
+
+  input.value = "";
 }
 
 // ================== Event Listeners ==================
-chatForm.addEventListener("submit", e => {
+document.querySelector("#chatForm").addEventListener("submit", e=>{
   e.preventDefault();
-  const txt = chatInput.value.trim();
-  if(!txt) return;
-  chatInput.value="";
-  sendChat(txt);
+  const txt = document.querySelector("#chatInput").value.trim();
+  if(txt) sendChat("text", txt);
 });
 
-sendBtn.addEventListener("click", ()=>{
-  const txt = chatInput.value.trim();
-  if(!txt) return;
-  chatInput.value="";
-  sendChat(txt);
+document.querySelector("#sendImageBtn").addEventListener("click", ()=>{
+  const txt = document.querySelector("#chatInputImage").value.trim();
+  if(txt) sendChat("image", txt);
 });
 
-imgToggleBtn.addEventListener("click", ()=>{
-  imgToggle = !imgToggle;
-  imgToggleBtn.textContent = imgToggle ? "Image ON" : "Generate Image";
+document.querySelector("#sendVideoBtn").addEventListener("click", ()=>{
+  const txt = document.querySelector("#chatInputVideo").value.trim();
+  if(txt) sendChat("video", txt);
+});
+
+document.querySelector("#send3DBtn").addEventListener("click", ()=>{
+  const txt = document.querySelector("#chatInput3D").value.trim();
+  if(txt) sendChat("3d", txt);
+});
+
+// ================== Load API Keys from localStorage ==================
+["text","image","video","3d"].forEach(type=>{
+  const savedKey = localStorage.getItem(`${type}ApiKey`);
+  if(savedKey){
+    document.querySelector(`#${type}ApiKey`).value = savedKey;
+  }
 });
