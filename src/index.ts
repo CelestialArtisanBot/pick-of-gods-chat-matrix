@@ -1,32 +1,20 @@
-// This is your Worker file (e.g., src/index.js)
+// src/index.ts
+import { Env } from './types';
+import { handleChat } from './routes/chat';
+import { handleAuth } from './routes/auth';
+
 export default {
-  async fetch(request, env) {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
 
-    // Only allow POST requests for the chat API
-    if (request.method !== 'POST') {
-      return new Response('Method Not Allowed', { status: 405 });
+    if (url.pathname.startsWith('/api/chat')) {
+      return handleChat(request, env);
     }
 
-    try {
-      // Parse the JSON body from the incoming request
-      const { message } = await request.json();
-
-      // Use the Workers AI binding to run the model
-      const aiResponse = await env.AI.run(
-        '@cf/meta/llama-3-8b-instruct',
-        {
-          messages: [{ role: 'user', content: message }]
-        }
-      );
-
-      // Return the AI's response as a JSON object
-      return new Response(JSON.stringify({ response: aiResponse.response }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-    } catch (error) {
-      console.error('Error handling request:', error);
-      return new Response(JSON.stringify({ error: 'Failed to process message' }), { status: 500 });
+    if (url.pathname.startsWith('/api/auth')) {
+      return handleAuth(request, env);
     }
-  },
+    
+    return new Response('Not Found', { status: 404 });
+  }
 };
