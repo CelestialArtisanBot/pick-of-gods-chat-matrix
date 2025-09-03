@@ -1,35 +1,22 @@
-// Main Wrangler configuration for Pick of Gods Chat Matrix
 {
   "name": "pick-of-gods-chat-matrix",
-  "main": "src/index.ts",
-  "compatibility_date": "2025-09-02",
-  "ai_bindings": [
-    {
-      "name": "AI"
-    }
-  ],
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pick of Gods AI Chat Platform",
+  "scripts": {
+    "start": "wrangler dev",
+    "build": "tsc",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250901.0",
+    "typescript": "^5.4.5",
+    "wrangler": "^3.57.2"
+  },
   "kv_namespaces": [
     {
       "binding": "AUTH_STORAGE",
-      "id": "<your-auth-storage-id>"
-    },
-    {
-      "binding": "READONLY",
-      "id": "<your-readonly-id>"
+      "id": "095c5451dd0f4c18b6df88530673001b"
     }
-  ],
-  "services": [
-    {
-      "binding": "DISPATCHER",
-      "service": "DISPATCHER"
-    }
-  ],
-  "vars": {
-    "OPENROUTER_KEY": "",
-    "CLOUDFLARE_ACCOUNT_ID": "<your-account-id>"
-  },
-  "env": {
-    "development": {},
-    "production": {}
-  }
+  ]
 }
