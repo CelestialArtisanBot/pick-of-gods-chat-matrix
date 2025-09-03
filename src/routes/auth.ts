@@ -1,20 +1,19 @@
-import { Env, AuthRequestBody, AuthResponseBody, AuthSession, AuthSubject, UserSubject } from "../types";
-import { generateTimestamp, generateId } from "../utils";
+// src/routes/auth.ts
+import { Env, AuthRequestBody, AuthResponseBody } from '../types';
 
 export async function handleAuth(request: Request, env: Env): Promise<Response> {
   try {
-    const body = (await request.json()) as AuthRequestBody;
+    const body: AuthRequestBody = await request.json();
 
     if (!body.email) {
       const res: AuthResponseBody = { success: false, error: "Email required" };
       return new Response(JSON.stringify(res), { headers: { "Content-Type": "application/json" } });
     }
 
-    const session: AuthSession = {
-      sessionId: generateId(),
-      subject: { type: "user", user: { id: generateId(), email: body.email } } as AuthSubject,
-      issuedAt: generateTimestamp(),
-      expiresAt: generateTimestamp(60 * 60 * 24), // expires in 24h
+    const session = {
+      sessionId: crypto.randomUUID(),
+      userId: crypto.randomUUID(),
+      expiresAt: Date.now() + (1000 * 60 * 60 * 24), // 24 hours
     };
 
     await env.AUTH_STORAGE.put(session.sessionId, JSON.stringify(session));
@@ -22,7 +21,6 @@ export async function handleAuth(request: Request, env: Env): Promise<Response> 
     const res: AuthResponseBody = { success: true, session };
     return new Response(JSON.stringify(res), { headers: { "Content-Type": "application/json" } });
   } catch (err) {
-    console.error("Auth error:", err);
     const res: AuthResponseBody = { success: false, error: "Auth failed" };
     return new Response(JSON.stringify(res), { status: 500, headers: { "Content-Type": "application/json" } });
   }
