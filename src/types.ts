@@ -2,38 +2,41 @@
 // Global Types
 // ========================
 
+import type { KVNamespace, Fetcher } from '@cloudflare/workers-types';
+
 export interface Env {
-  AI: any; // Cloudflare AI
+  AI: any; 
   OPENROUTER_KEY: string;
   AUTH_STORAGE: KVNamespace;
-  DISPATCHER: any;
+  READONLY: KVNamespace;
+  DISPATCHER: Fetcher; 
   CLOUDFLARE_API_TOKEN: string;
   CLOUDFLARE_ACCOUNT_ID: string;
-  READONLY: KVNamespace;
 }
 
 export interface AuthRequestBody {
   email: string;
-  password: string;
+  password?: string;
 }
 
-export interface AuthSession {
-  sessionId: string;
-  userId: string;
-  expiresAt: number;
-}
-
-export interface ChatRequestBody {
-  messages: { role: string; content: string }[];
-  generateImage?: boolean;
-  maxTokens?: number;
-  temperature?: number;
-  topP?: number;
+export interface AuthResponseBody {
+  success: boolean;
+  error?: string;
+  session?: {
+    sessionId: string;
+    userId: string;
+    expiresAt: number;
+  };
 }
 
 export interface ChatMessage {
-  role: string;
+  role: "user" | "ai" | "system";
   content: string;
+}
+
+export interface ChatRequestBody {
+  messages: ChatMessage[];
+  generateImage?: boolean;
 }
 
 export interface ChatResponseBody {
@@ -43,5 +46,12 @@ export interface ChatResponseBody {
 export interface DeployRequestBody {
   scriptName: string;
   code: string;
+  routes: string[];
+}
+
+export interface DeployResponseBody {
+  success: boolean;
+  scriptName: string;
+  workerId: string;
   routes: string[];
 }
