@@ -1,42 +1,35 @@
 // Main Wrangler configuration for Pick of Gods Chat Matrix
-name = "pick-of-gods-chat-matrix"
-main = "src/index.ts"
-compatibility_date = "2025-09-02"
-
-# Bindings that are consistent across all environments
-# The AI binding is now a top-level `ai_binding`
-[[ai_bindings]]
-name = "AI"
-
-# KV namespaces are top-level `kv_namespaces`
-[[kv_namespaces]]
-binding = "AUTH_STORAGE"
-id = "<your-auth-storage-id>"
-
-[[kv_namespaces]]
-binding = "READONLY"
-id = "<your-readonly-id>"
-
-# Service Bindings are top-level `services`
-[[services]]
-binding = "DISPATCHER"
-service = "DISPATCHER"
-
-# Secrets and environment variables are top-level `vars`
-[vars]
-OPENROUTER_KEY = "" # Store as a secret
-CLOUDFLARE_ACCOUNT_ID = "<your-account-id>" # Plain text variable
-
-# Configure the 'development' environment
-[env.development]
-# Environment-specific overrides go here if needed
-# For secrets, use wrangler secrets put to manage them
-# e.g., 'wrangler secrets put --env development OPENROUTER_KEY'
-
-# Configure the 'production' environment
-[env.production]
-# You can override bindings and variables for production here
-# For example, if you have a separate KV namespace for production
-# [[kv_namespaces]]
-# binding = "AUTH_STORAGE"
-# id = "<your-production-auth-storage-id>"
+{
+  "name": "pick-of-gods-chat-matrix",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-02",
+  "ai_bindings": [
+    {
+      "name": "AI"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "AUTH_STORAGE",
+      "id": "<your-auth-storage-id>"
+    },
+    {
+      "binding": "READONLY",
+      "id": "<your-readonly-id>"
+    }
+  ],
+  "services": [
+    {
+      "binding": "DISPATCHER",
+      "service": "DISPATCHER"
+    }
+  ],
+  "vars": {
+    "OPENROUTER_KEY": "",
+    "CLOUDFLARE_ACCOUNT_ID": "<your-account-id>"
+  },
+  "env": {
+    "development": {},
+    "production": {}
+  }
+}
